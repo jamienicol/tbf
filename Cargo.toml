@@ -4,3 +4,4 @@ version = "0.1.0"
 authors = ["Jamie Nicol <jamie@jamienicol.me>"]
 
 [dependencies]
+ggez = "0.4"
