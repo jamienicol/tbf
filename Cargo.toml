@@ -5,3 +5,5 @@ authors = ["Jamie Nicol <jamie@jamienicol.me>"]
 
 [dependencies]
 ggez = "0.4"
+specs = "0.10"
+specs-derive = "0.1"
