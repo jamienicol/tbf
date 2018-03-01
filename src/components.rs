@@ -14,3 +14,6 @@ pub struct Size {
 pub struct Sprite {
     pub image_id: &'static str,
 }
+
+#[derive(Component)]
+pub struct Cursor;

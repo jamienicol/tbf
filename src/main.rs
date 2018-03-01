@@ -5,6 +5,7 @@ extern crate specs_derive;
 
 mod assets;
 mod components;
+mod input;
 
 use std::default::Default;
 use std::env;
@@ -15,10 +16,40 @@ use ggez::conf::{WindowMode, WindowSetup};
 use ggez::event;
 use ggez::graphics;
 use ggez::graphics::{Drawable, Point2};
-use specs::{Fetch, Join, ReadStorage, RunNow, System, World};
+use specs::{Fetch, Join, ReadStorage, RunNow, System, World, WriteStorage};
 
 use assets::Assets;
-use components::{Position, Size, Sprite};
+use components::{Cursor, Position, Size, Sprite};
+use input::Input;
+
+struct CursorSystem;
+
+impl<'a> System<'a> for CursorSystem {
+    type SystemData = (
+        Fetch<'a, Input>,
+        ReadStorage<'a, Cursor>,
+        WriteStorage<'a, Position>,
+    );
+
+    fn run(&mut self, data: Self::SystemData) {
+        let (input, cursors, mut positions) = data;
+
+        for (_cursor, position) in (&cursors, &mut positions).join() {
+            if input.up {
+                position.y -= 8.0;
+            }
+            if input.down {
+                position.y += 8.0;
+            }
+            if input.left {
+                position.x -= 8.0;
+            }
+            if input.right {
+                position.x += 8.0;
+            }
+        }
+    }
+}
 
 struct RenderSystem<'c> {
     ctx: &'c mut Context,
@@ -41,8 +72,8 @@ impl<'a, 'c> System<'a> for RenderSystem<'c> {
     fn run(&mut self, data: Self::SystemData) {
         let (assets, positions, sizes, sprites) = data;
 
-        for (position, size, sprite) in (&positions, &sizes, &sprites).join() {
-            let image = assets.images.get(sprite.image_id).unwrap();
+        for (position, _size, sprite) in (&positions, &sizes, &sprites).join() {
+            let image = &assets.images[sprite.image_id];
             image
                 .draw(&mut self.ctx, Point2::new(position.x, position.y), 0.0)
                 .unwrap();
@@ -60,6 +91,7 @@ impl Game {
         world.register::<Position>();
         world.register::<Size>();
         world.register::<Sprite>();
+        world.register::<Cursor>();
 
         let mut assets = Assets::new();
 
@@ -67,10 +99,12 @@ impl Game {
         assets.images.insert("cursor", cursor_image);
 
         world.add_resource(assets);
+        world.add_resource(Input::default());
 
         // Create cursor
         world
             .create_entity()
+            .with(Cursor)
             .with(Position { x: 100.0, y: 200.0 })
             .with(Size {
                 width: 64.0,
@@ -86,6 +120,9 @@ impl Game {
 
 impl event::EventHandler for Game {
     fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
+        let mut cs = CursorSystem;
+        cs.run_now(&self.world.res);
+
         Ok(())
     }
 
@@ -94,12 +131,48 @@ impl event::EventHandler for Game {
 
         {
             let mut rs = RenderSystem::new(ctx);
-            rs.run_now(&mut self.world.res);
+            rs.run_now(&self.world.res);
         }
 
         graphics::present(ctx);
 
         Ok(())
+    }
+
+    fn key_down_event(
+        &mut self,
+        _ctx: &mut Context,
+        keycode: event::Keycode,
+        _keymod: event::Mod,
+        _repeat: bool,
+    ) {
+        let mut input = self.world.write_resource::<Input>();
+
+        match keycode {
+            event::Keycode::Up => input.up = true,
+            event::Keycode::Down => input.down = true,
+            event::Keycode::Left => input.left = true,
+            event::Keycode::Right => input.right = true,
+            _ => (),
+        }
+    }
+
+    fn key_up_event(
+        &mut self,
+        _ctx: &mut Context,
+        keycode: event::Keycode,
+        _keymod: event::Mod,
+        _repeat: bool,
+    ) {
+        let mut input = self.world.write_resource::<Input>();
+
+        match keycode {
+            event::Keycode::Up => input.up = false,
+            event::Keycode::Down => input.down = false,
+            event::Keycode::Left => input.left = false,
+            event::Keycode::Right => input.right = false,
+            _ => (),
+        }
     }
 }
 
