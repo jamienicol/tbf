@@ -16,36 +16,44 @@ use ggez::conf::{WindowMode, WindowSetup};
 use ggez::event;
 use ggez::graphics;
 use ggez::graphics::{Drawable, Point2};
+use ggez::timer;
 use specs::{Fetch, Join, ReadStorage, RunNow, System, World, WriteStorage};
 
 use assets::Assets;
 use components::{Cursor, Position, Size, Sprite};
 use input::Input;
 
+struct DeltaTime {
+    pub dt: f32,
+}
+
 struct CursorSystem;
 
 impl<'a> System<'a> for CursorSystem {
     type SystemData = (
         Fetch<'a, Input>,
+        Fetch<'a, DeltaTime>,
         ReadStorage<'a, Cursor>,
         WriteStorage<'a, Position>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
-        let (input, cursors, mut positions) = data;
+        let (input, dt, cursors, mut positions) = data;
+
+        let speed = 320.0;
 
         for (_cursor, position) in (&cursors, &mut positions).join() {
             if input.up {
-                position.y -= 8.0;
+                position.y -= speed * dt.dt;
             }
             if input.down {
-                position.y += 8.0;
+                position.y += speed * dt.dt;
             }
             if input.left {
-                position.x -= 8.0;
+                position.x -= speed * dt.dt;
             }
             if input.right {
-                position.x += 8.0;
+                position.x += speed * dt.dt;
             }
         }
     }
@@ -75,7 +83,11 @@ impl<'a, 'c> System<'a> for RenderSystem<'c> {
         for (position, _size, sprite) in (&positions, &sizes, &sprites).join() {
             let image = &assets.images[sprite.image_id];
             image
-                .draw(&mut self.ctx, Point2::new(position.x, position.y), 0.0)
+                .draw(
+                    &mut self.ctx,
+                    Point2::new(position.x.round(), position.y.round()),
+                    0.0,
+                )
                 .unwrap();
         }
     }
@@ -98,6 +110,7 @@ impl Game {
         let cursor_image = graphics::Image::new(ctx, "/cursor.png").unwrap();
         assets.images.insert("cursor", cursor_image);
 
+        world.add_resource(DeltaTime { dt: 0.0 });
         world.add_resource(assets);
         world.add_resource(Input::default());
 
@@ -105,7 +118,7 @@ impl Game {
         world
             .create_entity()
             .with(Cursor)
-            .with(Position { x: 100.0, y: 200.0 })
+            .with(Position { x: 0.0, y: 0.0 })
             .with(Size {
                 width: 64.0,
                 height: 64.0,
@@ -119,7 +132,10 @@ impl Game {
 }
 
 impl event::EventHandler for Game {
-    fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
+    fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+        self.world.write_resource::<DeltaTime>().dt =
+            timer::duration_to_f64(timer::get_delta(ctx)) as f32;
+
         let mut cs = CursorSystem;
         cs.run_now(&self.world.res);
 
