@@ -1,19 +1,34 @@
-#[derive(Component)]
+use ggez::graphics::{Point2, Vector2};
+
+#[derive(Component, Debug)]
 pub struct Position {
-    pub x: f32,
-    pub y: f32,
+    pub pos: Point2,
 }
 
-#[derive(Component)]
+#[derive(Component, Debug)]
+pub struct Movement {
+    pub target: Point2,
+    pub velocity: Vector2,
+}
+
+#[derive(Component, Debug)]
 pub struct Size {
     pub width: f32,
     pub height: f32,
 }
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 pub struct Sprite {
     pub image_id: &'static str,
 }
 
-#[derive(Component)]
-pub struct Cursor;
+#[derive(Debug, PartialEq)]
+pub enum CursorState {
+    Still,
+    Moving,
+}
+
+#[derive(Component, Debug)]
+pub struct Cursor {
+    pub state: CursorState,
+}

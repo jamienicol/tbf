@@ -31,7 +31,7 @@ impl<'a, 'c> System<'a> for RenderSystem<'c> {
             image
                 .draw(
                     &mut self.ctx,
-                    Point2::new(position.x.round(), position.y.round()),
+                    Point2::new(position.pos.x.round(), position.pos.y.round()),
                     0.0,
                 )
                 .unwrap();

@@ -15,6 +15,7 @@ impl Assets {
     }
 }
 
+#[derive(Debug)]
 pub struct DeltaTime {
     pub dt: f32,
 }

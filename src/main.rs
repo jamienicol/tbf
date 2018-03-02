@@ -5,6 +5,7 @@ extern crate specs_derive;
 
 mod components;
 mod cursor;
+mod movement;
 mod render;
 mod resources;
 
@@ -16,11 +17,13 @@ use ggez::{Context, ContextBuilder, GameResult};
 use ggez::conf::{WindowMode, WindowSetup};
 use ggez::event;
 use ggez::graphics;
+use ggez::graphics::Point2;
 use ggez::timer;
 use specs::{RunNow, World};
 
-use components::{Cursor, Position, Size, Sprite};
+use components::{Cursor, CursorState, Movement, Position, Size, Sprite};
 use cursor::CursorSystem;
+use movement::MovementSystem;
 use render::RenderSystem;
 use resources::{Assets, DeltaTime, Input};
 
@@ -32,6 +35,7 @@ impl Game {
     fn new(ctx: &mut Context) -> GameResult<Self> {
         let mut world = World::new();
         world.register::<Position>();
+        world.register::<Movement>();
         world.register::<Size>();
         world.register::<Sprite>();
         world.register::<Cursor>();
@@ -48,8 +52,12 @@ impl Game {
         // Create cursor
         world
             .create_entity()
-            .with(Cursor)
-            .with(Position { x: 0.0, y: 0.0 })
+            .with(Cursor {
+                state: CursorState::Still,
+            })
+            .with(Position {
+                pos: Point2::new(0.0, 0.0),
+            })
             .with(Size {
                 width: 64.0,
                 height: 64.0,
@@ -69,6 +77,9 @@ impl event::EventHandler for Game {
 
         let mut cs = CursorSystem;
         cs.run_now(&self.world.res);
+
+        let mut ms = MovementSystem;
+        ms.run_now(&self.world.res);
 
         Ok(())
     }
