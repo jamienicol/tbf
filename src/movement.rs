@@ -1,5 +1,5 @@
 use ggez::graphics::Vector2;
-use specs::{Fetch, Join, ReadStorage, System, WriteStorage};
+use specs::{Fetch, Join, System, WriteStorage};
 
 use components::{Movement, Position};
 use resources::DeltaTime;
@@ -10,20 +10,49 @@ impl<'a> System<'a> for MovementSystem {
     type SystemData = (
         Fetch<'a, DeltaTime>,
         WriteStorage<'a, Position>,
-        ReadStorage<'a, Movement>,
+        WriteStorage<'a, Movement>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
-        let (dt, mut positions, movements) = data;
+        let (dt, mut positions, mut movements) = data;
 
-        for (position, movement) in (&mut positions, &movements).join() {
-            let disp = movement.velocity * dt.dt;
-            let remaining = movement.target - position.pos;
-            let actual = Vector2::new(
-                disp.x.abs().min(remaining.x.abs()) * disp.x.signum(),
-                disp.y.abs().min(remaining.y.abs()) * disp.y.signum(),
-            );
-            position.pos += actual;
+        for (position, movement) in (&mut positions, &mut movements).join() {
+            let mut remaining_dt = dt.dt;
+
+            while remaining_dt > 0.0 {
+                if !movement.steps.is_empty() {
+                    let step = movement.steps.front().unwrap().clone();
+                    let disp = step.target - position.pos;
+
+                    // calculate required time to travel remaining horizontal distance
+                    let required_dt_x = if step.velocity.x != 0.0 {
+                        remaining_dt.min(disp.x / step.velocity.x)
+                    } else {
+                        0.0
+                    };
+
+                    // calculate required time to travel remaining vertical distance
+                    let required_dt_y = if step.velocity.y != 0.0 {
+                        remaining_dt.min(disp.y / step.velocity.y)
+                    } else {
+                        0.0
+                    };
+
+                    // move and subtract used time from remaining time
+                    position.pos += Vector2::new(
+                        step.velocity.x * required_dt_x,
+                        step.velocity.y * required_dt_y,
+                    );
+                    remaining_dt -= required_dt_x.max(required_dt_y);
+
+                    // check if we've finished the step
+                    if position.pos == step.target {
+                        movement.steps.pop_front();
+                    }
+                } else {
+                    break;
+                }
+            }
         }
     }
 }

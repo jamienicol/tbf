@@ -62,6 +62,7 @@ impl Game {
                 width: 64.0,
                 height: 64.0,
             })
+            .with(Movement::new())
             .with(Sprite { image_id: "cursor" })
             .build();
 
