@@ -1,10 +1,12 @@
 use std::collections::HashMap;
 use std::default::Default;
+use std::string::String;
 
 use ggez::graphics::Image;
+use tiled;
 
 pub struct Assets {
-    pub images: HashMap<&'static str, Image>,
+    pub images: HashMap<String, Image>,
 }
 
 impl Assets {
@@ -37,4 +39,8 @@ impl Default for Input {
             right: false,
         }
     }
+}
+
+pub struct Map {
+    pub map: tiled::Map,
 }

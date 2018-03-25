@@ -7,3 +7,4 @@ authors = ["Jamie Nicol <jamie@jamienicol.me>"]
 ggez = "0.4"
 specs = "0.10"
 specs-derive = "0.1"
+tiled = "0.7"

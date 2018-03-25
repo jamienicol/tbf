@@ -2,6 +2,7 @@ extern crate ggez;
 extern crate specs;
 #[macro_use]
 extern crate specs_derive;
+extern crate tiled;
 
 mod components;
 mod cursor;
@@ -11,7 +12,7 @@ mod resources;
 
 use std::default::Default;
 use std::env;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use ggez::{Context, ContextBuilder, GameResult};
 use ggez::conf::{WindowMode, WindowSetup};
@@ -25,7 +26,7 @@ use components::{Cursor, CursorState, Movement, Position, Size, Sprite};
 use cursor::CursorSystem;
 use movement::MovementSystem;
 use render::RenderSystem;
-use resources::{Assets, DeltaTime, Input};
+use resources::{Assets, DeltaTime, Input, Map};
 
 struct Game {
     world: World,
@@ -43,11 +44,24 @@ impl Game {
         let mut assets = Assets::new();
 
         let cursor_image = graphics::Image::new(ctx, "/cursor.png").unwrap();
-        assets.images.insert("cursor", cursor_image);
+        assets.images.insert("cursor".to_string(), cursor_image);
+
+        // Load map
+        let map =
+            tiled::parse_file(Path::new("./resources/pitch.tmx")).expect("Failed to parse map.");
+
+        for tileset in &map.tilesets {
+            let mut tileset_path = PathBuf::from("/");
+            tileset_path.push(&tileset.images[0].source);
+            let tileset_image =
+                graphics::Image::new(ctx, tileset_path).expect("Failed to load tileset image.");
+            assets.images.insert(tileset.name.clone(), tileset_image);
+        }
 
         world.add_resource(DeltaTime { dt: 0.0 });
         world.add_resource(assets);
         world.add_resource(Input::default());
+        world.add_resource(Map { map: map });
 
         // Create cursor
         world
