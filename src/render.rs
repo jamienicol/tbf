@@ -9,19 +9,26 @@ use components::{Position, Size, Sprite};
 use resources::{Assets, Map};
 use std::marker::PhantomData;
 
-pub struct RenderSystem<'c>
+pub struct RenderSystem<'c, F, R> where
+    F: gfx::Factory<R> + 'c,
+    R: gfx::Resources + 'c
 {
-    ctx: &'c mut Context,
+    factory: &'c mut F,
+    phantom: PhantomData<&'c R>,
 }
 
-impl<'c> RenderSystem<'c>
+impl<'c, F, R> RenderSystem<'c, F, R> where
+    F: gfx::Factory<R> + 'c,
+    R: gfx::Resources + 'c,
 {
-    pub fn new(ctx: &'c mut Context) -> Self {
-        Self { ctx: ctx }
+    pub fn new(factory: &'c mut F) -> Self {
+        Self { factory: factory, phantom: PhantomData }
     }
 }
 
-impl<'a, 'c> System<'a> for RenderSystem<'c>
+impl<'a, 'c, F, R> System<'a> for RenderSystem<'c, F, R> where
+    F: gfx::Factory<R> + 'c,
+    R: gfx::Resources + 'c,
 {
     type SystemData = (
         Fetch<'a, Assets<gfx_device_gl::Resources>>, // TODO: make this generic
@@ -70,15 +77,15 @@ impl<'a, 'c> System<'a> for RenderSystem<'c>
         //     .draw(&mut self.ctx, Point2::new(0.0, 0.0), 0.0)
         //     .unwrap();
 
-        for (position, _size, sprite) in (&positions, &sizes, &sprites).join() {
-            let image = &assets.images[sprite.image_id];
-            image
-                .draw(
-                    &mut self.ctx,
-                    Point2::new(position.pos.x.round(), position.pos.y.round()),
-                    0.0,
-                )
-                .unwrap();
-        }
+        // for (position, _size, sprite) in (&positions, &sizes, &sprites).join() {
+        //     let image = &assets.images[sprite.image_id];
+        //     image
+        //         .draw(
+        //             &mut self.ctx,
+        //             Point2::new(position.pos.x.round(), position.pos.y.round()),
+        //             0.0,
+        //         )
+        //         .unwrap();
+        // }
     }
 }

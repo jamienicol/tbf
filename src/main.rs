@@ -128,6 +128,10 @@ fn main() {
 
         encoder.clear(&rtv, [1.0, 0.0, 0.0, 1.0]);
 
+        {
+            let mut rs = RenderSystem::new(&mut factory);
+            rs.run_now(&world.res);
+        }
         // renderer.render_sprite(&mut encoder, &rtv, &sprite, &texture);
 
         encoder.flush(&mut device);
@@ -172,8 +176,8 @@ impl event::EventHandler for Game {
         graphics::clear(ctx);
 
         {
-            let mut rs = RenderSystem::new(ctx);
-            rs.run_now(&self.world.res);
+            // let mut rs = RenderSystem::new(ctx);
+            // rs.run_now(&self.world.res);
         }
 
         graphics::present(ctx);
