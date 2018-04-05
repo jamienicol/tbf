@@ -14,7 +14,7 @@ use std::default::Default;
 use std::env;
 use std::path::{Path, PathBuf};
 
-use ggez::{Context, ContextBuilder, GameResult};
+use ggez::{Context, GameResult};
 use ggez::conf::{WindowMode, WindowSetup};
 use ggez::event;
 use ggez::graphics;
@@ -28,6 +28,114 @@ use movement::MovementSystem;
 use render::RenderSystem;
 use resources::{Assets, DeltaTime, Input, Map};
 
+
+#[macro_use]
+extern crate gfx;
+extern crate gfx_device_gl;
+extern crate gfx_window_glutin;
+extern crate glutin;
+extern crate image;
+
+mod sprite;
+
+use glutin::{ContextBuilder, Event, EventsLoop, GlContext, WindowBuilder, WindowEvent};
+use gfx::Device;
+use gfx::format::{DepthStencil, Rgba8};
+use gfx::texture::Mipmap;
+
+fn main() {
+    // Wayland backend has some issues, force X for now.
+    std::env::set_var("WINIT_UNIX_BACKEND", "x11");
+
+    let mut events_loop = EventsLoop::new();
+    let wb = WindowBuilder::new()
+        .with_title("Turn Based Football")
+        .with_dimensions(1280, 800);
+    let cb = ContextBuilder::new();
+    let (window, mut device, mut factory, mut rtv, mut stv) =
+        gfx_window_glutin::init::<Rgba8, DepthStencil>(wb, cb, &events_loop);
+
+    let mut encoder: gfx::Encoder<_, _> = factory.create_command_buffer().into();
+
+    let renderer = sprite::Renderer::new(&mut factory);
+    let mut sprite = sprite::Sprite::new();
+    sprite.set_pos(-0.5, -0.5);
+    sprite.set_size(1.0, 1.0);
+    sprite.set_tex_rect(0.0, 0.0, 1.0, 1.0);
+
+
+
+    let mut world = World::new();
+    world.register::<Position>();
+    world.register::<Movement>();
+    world.register::<Size>();
+    world.register::<Sprite>();
+    world.register::<Cursor>();
+
+    let mut assets = Assets::new();
+
+    assets.load_image(&mut factory, "cursor.png", "cursor".to_string());
+
+    // Load map
+    let map =
+        tiled::parse_file(Path::new("resources/pitch.tmx")).expect("Failed to parse map.");
+    for tileset in &map.tilesets {
+        assets.load_image(&mut factory, &tileset.images[0].source, tileset.name.clone());
+    }
+
+    world.add_resource(DeltaTime { dt: 0.0 });
+    world.add_resource(assets);
+    world.add_resource(Input::default());
+    world.add_resource(Map { map: map });
+
+    // Create cursor
+    world
+        .create_entity()
+        .with(Cursor {
+            state: CursorState::Still,
+        })
+        .with(Position {
+            pos: Point2::new(0.0, 0.0),
+        })
+        .with(Size {
+            width: 64.0,
+            height: 64.0,
+        })
+        .with(Movement::new())
+        .with(Sprite { image_id: "cursor" })
+        .build();
+
+
+    let mut running = true;
+    'main_loop: loop {
+        events_loop.poll_events(|event| {
+            if let Event::WindowEvent { event, .. } = event {
+                match event {
+                    WindowEvent::Closed => {
+                        running = false;
+                    }
+                    WindowEvent::Resized(_, _) => {
+                        gfx_window_glutin::update_views(&window, &mut rtv, &mut stv);
+                    }
+                    _ => (),
+                }
+            }
+        });
+
+        if !running {
+            break 'main_loop
+        }
+
+        encoder.clear(&rtv, [1.0, 0.0, 0.0, 1.0]);
+
+        // renderer.render_sprite(&mut encoder, &rtv, &sprite, &texture);
+
+        encoder.flush(&mut device);
+        window.swap_buffers().unwrap();
+        device.cleanup();
+    }
+}
+
 struct Game {
     world: World,
 }
@@ -40,45 +148,6 @@ impl Game {
         world.register::<Size>();
         world.register::<Sprite>();
         world.register::<Cursor>();
-
-        let mut assets = Assets::new();
-
-        let cursor_image = graphics::Image::new(ctx, "/cursor.png").unwrap();
-        assets.images.insert("cursor".to_string(), cursor_image);
-
-        // Load map
-        let map =
-            tiled::parse_file(Path::new("./resources/pitch.tmx")).expect("Failed to parse map.");
-
-        for tileset in &map.tilesets {
-            let mut tileset_path = PathBuf::from("/");
-            tileset_path.push(&tileset.images[0].source);
-            let tileset_image =
-                graphics::Image::new(ctx, tileset_path).expect("Failed to load tileset image.");
-            assets.images.insert(tileset.name.clone(), tileset_image);
-        }
-
-        world.add_resource(DeltaTime { dt: 0.0 });
-        world.add_resource(assets);
-        world.add_resource(Input::default());
-        world.add_resource(Map { map: map });
-
-        // Create cursor
-        world
-            .create_entity()
-            .with(Cursor {
-                state: CursorState::Still,
-            })
-            .with(Position {
-                pos: Point2::new(0.0, 0.0),
-            })
-            .with(Size {
-                width: 64.0,
-                height: 64.0,
-            })
-            .with(Movement::new())
-            .with(Sprite { image_id: "cursor" })
-            .build();
 
         let s = Self { world: world };
         Ok(s)
@@ -149,24 +218,25 @@ impl event::EventHandler for Game {
     }
 }
 
-fn main() {
-    let mut cb = ContextBuilder::new("tbf", "Jamie Nicol");
-    cb = cb.window_setup(WindowSetup {
-        title: "Turn Based Football".to_string(),
-        ..Default::default()
-    });
-    cb = cb.window_mode(WindowMode {
-        width: 1280,
-        height: 800,
-        ..Default::default()
-    });
-    if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
-        let mut path = PathBuf::from(manifest_dir);
-        path.push("resources");
-        cb = cb.add_resource_path(path);
-    }
-    let mut ctx = cb.build().unwrap();
+// fn main() {
 
-    let mut state = Game::new(&mut ctx).unwrap();
-    event::run(&mut ctx, &mut state).unwrap();
-}
+    // let mut cb = ContextBuilder::new("tbf", "Jamie Nicol");
+    // cb = cb.window_setup(WindowSetup {
+    //     title: "Turn Based Football".to_string(),
+    //     ..Default::default()
+    // });
+    // cb = cb.window_mode(WindowMode {
+    //     width: 1280,
+    //     height: 800,
+    //     ..Default::default()
+    // });
+    // if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
+    //     let mut path = PathBuf::from(manifest_dir);
+    //     path.push("resources");
+    //     cb = cb.add_resource_path(path);
+    // }
+    // let mut ctx = cb.build().unwrap();
+
+    // let mut state = Game::new(&mut ctx).unwrap();
+    // event::run(&mut ctx, &mut state).unwrap();
+// }
