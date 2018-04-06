@@ -16,7 +16,8 @@ gfx_defines! {
         vbuf: gfx::VertexBuffer<Vertex> = (),
         texture: gfx::TextureSampler<[f32; 4]> = "t_Texture",
         proj: gfx::Global<[[f32; 4]; 4]> = "u_Proj",
-        out: gfx::RenderTarget<Rgba8> = "Target0",
+        out: gfx::BlendTarget<Rgba8> =
+            ("Target0", gfx::state::ColorMask::all(), gfx::preset::blend::ALPHA),
     }
 }
 
