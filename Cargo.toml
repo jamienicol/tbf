@@ -4,12 +4,11 @@ version = "0.1.0"
 authors = ["Jamie Nicol <jamie@jamienicol.me>"]
 
 [dependencies]
-ggez = "0.4"
+cgmath = "0.16"
 specs = "0.10"
 specs-derive = "0.1"
 tiled = "0.7"
 gfx = "0.17"
 gfx_window_glutin = "0.21"
-gfx_device_gl = "0.15"
 glutin = "0.13"
 image = "0.18"

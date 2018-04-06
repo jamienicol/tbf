@@ -1,4 +1,4 @@
-use ggez::graphics::Vector2;
+use cgmath::Vector2;
 use specs::{Fetch, Join, System, WriteStorage};
 
 use components::{Movement, Position};

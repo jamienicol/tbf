@@ -1,12 +1,10 @@
 use gfx;
 use gfx::format::Rgba8;
-use gfx::handle::{Buffer, RenderTargetView, Sampler, ShaderResourceView};
-use gfx_device_gl;
+use gfx::handle::RenderTargetView;
 use specs::{Fetch, Join, ReadStorage, System};
 
 use components::{Position, Size, Sprite};
 use resources::{Assets, Map};
-use std::marker::PhantomData;
 
 use sprite;
 
@@ -107,12 +105,12 @@ where
         //         .unwrap();
         // }
 
-        for (position, _size, sprite) in (&positions, &sizes, &sprites).join() {
+        for (position, size, sprite) in (&positions, &sizes, &sprites).join() {
             let texture = &assets.images[sprite.image_id];
 
             let mut sprite = sprite::Sprite::new();
-            sprite.set_pos(-0.5, -0.5);
-            sprite.set_size(1.0, 1.0);
+            sprite.set_pos(position.pos.x, position.pos.y);
+            sprite.set_size(size.width, size.height);
             sprite.set_tex_rect(0.0, 0.0, 1.0, 1.0);
 
             self.sprite_renderer

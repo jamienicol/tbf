@@ -1,16 +1,16 @@
 use std::collections::VecDeque;
 
-use ggez::graphics::{Point2, Vector2};
+use cgmath::{Point2, Vector2};
 
 #[derive(Component, Debug)]
 pub struct Position {
-    pub pos: Point2,
+    pub pos: Point2<f32>,
 }
 
 #[derive(Clone, Debug)]
 pub struct MovementStep {
-    pub target: Point2,
-    pub velocity: Vector2,
+    pub target: Point2<f32>,
+    pub velocity: Vector2<f32>,
 }
 
 #[derive(Component, Debug)]

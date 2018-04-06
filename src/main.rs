@@ -1,3 +1,4 @@
+extern crate cgmath;
 extern crate specs;
 #[macro_use]
 extern crate specs_derive;
@@ -10,9 +11,9 @@ mod render;
 mod resources;
 
 use std::default::Default;
-use std::env;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
+use cgmath::Point2;
 use specs::{RunNow, World};
 
 use components::{Cursor, CursorState, Movement, Position, Size, Sprite};
@@ -23,7 +24,6 @@ use resources::{Assets, DeltaTime, Input, Map};
 
 #[macro_use]
 extern crate gfx;
-extern crate gfx_device_gl;
 extern crate gfx_window_glutin;
 extern crate glutin;
 extern crate image;
@@ -32,7 +32,6 @@ mod sprite;
 
 use gfx::Device;
 use gfx::format::{DepthStencil, Rgba8};
-use gfx::texture::Mipmap;
 use glutin::{ContextBuilder, Event, EventsLoop, GlContext, WindowBuilder, WindowEvent};
 
 fn main() {
@@ -77,6 +76,9 @@ fn main() {
     world.add_resource(Input::default());
     world.add_resource(Map { map: map });
 
+    let mut movement_system = MovementSystem;
+    let mut cursor_system = CursorSystem;
+
     // Create cursor
     world
         .create_entity()
@@ -116,6 +118,9 @@ fn main() {
 
         encoder.clear(&rtv, [1.0, 0.0, 0.0, 1.0]);
 
+        cursor_system.run_now(&world.res);
+        movement_system.run_now(&world.res);
+
         {
             let mut rs = RenderSystem::new(&mut factory, &mut encoder, &rtv, &renderer);
             rs.run_now(&world.res);
@@ -127,84 +132,49 @@ fn main() {
     }
 }
 
-struct Game {
-    world: World,
-}
 
-impl Game {
-    fn new(ctx: &mut Context) -> GameResult<Self> {
-        let mut world = World::new();
-        world.register::<Position>();
-        world.register::<Movement>();
-        world.register::<Size>();
-        world.register::<Sprite>();
-        world.register::<Cursor>();
+// impl event::EventHandler for Game {
+//     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+//         self.world.write_resource::<DeltaTime>().dt =
+//             timer::duration_to_f64(timer::get_delta(ctx)) as f32;
 
-        let s = Self { world: world };
-        Ok(s)
-    }
-}
+//         Ok(())
+//     }
 
-impl event::EventHandler for Game {
-    fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
-        self.world.write_resource::<DeltaTime>().dt =
-            timer::duration_to_f64(timer::get_delta(ctx)) as f32;
 
-        let mut cs = CursorSystem;
-        cs.run_now(&self.world.res);
+//     fn key_down_event(
+//         &mut self,
+//         _ctx: &mut Context,
+//         keycode: event::Keycode,
+//         _keymod: event::Mod,
+//         _repeat: bool,
+//     ) {
+//         let mut input = self.world.write_resource::<Input>();
 
-        let mut ms = MovementSystem;
-        ms.run_now(&self.world.res);
+//         match keycode {
+//             event::Keycode::Up => input.up = true,
+//             event::Keycode::Down => input.down = true,
+//             event::Keycode::Left => input.left = true,
+//             event::Keycode::Right => input.right = true,
+//             _ => (),
+//         }
+//     }
 
-        Ok(())
-    }
+//     fn key_up_event(
+//         &mut self,
+//         _ctx: &mut Context,
+//         keycode: event::Keycode,
+//         _keymod: event::Mod,
+//         _repeat: bool,
+//     ) {
+//         let mut input = self.world.write_resource::<Input>();
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        graphics::clear(ctx);
-
-        {
-            // let mut rs = RenderSystem::new(&mut factory, &mut encoder, &rtv, &mut renderer);
-            // rs.run_now(&self.world.res);
-        }
-
-        graphics::present(ctx);
-
-        Ok(())
-    }
-
-    fn key_down_event(
-        &mut self,
-        _ctx: &mut Context,
-        keycode: event::Keycode,
-        _keymod: event::Mod,
-        _repeat: bool,
-    ) {
-        let mut input = self.world.write_resource::<Input>();
-
-        match keycode {
-            event::Keycode::Up => input.up = true,
-            event::Keycode::Down => input.down = true,
-            event::Keycode::Left => input.left = true,
-            event::Keycode::Right => input.right = true,
-            _ => (),
-        }
-    }
-
-    fn key_up_event(
-        &mut self,
-        _ctx: &mut Context,
-        keycode: event::Keycode,
-        _keymod: event::Mod,
-        _repeat: bool,
-    ) {
-        let mut input = self.world.write_resource::<Input>();
-
-        match keycode {
-            event::Keycode::Up => input.up = false,
-            event::Keycode::Down => input.down = false,
-            event::Keycode::Left => input.left = false,
-            event::Keycode::Right => input.right = false,
-            _ => (),
-        }
-    }
-}
+//         match keycode {
+//             event::Keycode::Up => input.up = false,
+//             event::Keycode::Down => input.down = false,
+//             event::Keycode::Left => input.left = false,
+//             event::Keycode::Right => input.right = false,
+//             _ => (),
+//         }
+//     }
+// }
