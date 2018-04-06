@@ -1,45 +1,64 @@
-use ggez::Context;
-use ggez::graphics::{DrawParam, Drawable, Point2, Rect};
-use ggez::graphics::spritebatch::SpriteBatch;
-use specs::{Fetch, Join, ReadStorage, System};
 use gfx;
+use gfx::format::Rgba8;
+use gfx::handle::{Buffer, RenderTargetView, Sampler, ShaderResourceView};
 use gfx_device_gl;
+use specs::{Fetch, Join, ReadStorage, System};
 
 use components::{Position, Size, Sprite};
 use resources::{Assets, Map};
 use std::marker::PhantomData;
 
-pub struct RenderSystem<'c, F, R> where
-    F: gfx::Factory<R> + 'c,
-    R: gfx::Resources + 'c
+use sprite;
+
+pub struct RenderSystem<'a, F, C, R>
+where
+    F: gfx::Factory<R> + 'a,
+    C: gfx::CommandBuffer<R> + 'a,
+    R: gfx::Resources + 'a,
 {
-    factory: &'c mut F,
-    phantom: PhantomData<&'c R>,
+    factory: &'a mut F,
+    encoder: &'a mut gfx::Encoder<R, C>,
+    out: &'a RenderTargetView<R, Rgba8>,
+    sprite_renderer: &'a sprite::Renderer<R>,
 }
 
-impl<'c, F, R> RenderSystem<'c, F, R> where
-    F: gfx::Factory<R> + 'c,
-    R: gfx::Resources + 'c,
+impl<'a, F, C, R> RenderSystem<'a, F, C, R>
+where
+    F: gfx::Factory<R>,
+    C: gfx::CommandBuffer<R>,
+    R: gfx::Resources,
 {
-    pub fn new(factory: &'c mut F) -> Self {
-        Self { factory: factory, phantom: PhantomData }
+    pub fn new(
+        factory: &'a mut F,
+        encoder: &'a mut gfx::Encoder<R, C>,
+        out: &'a RenderTargetView<R, Rgba8>,
+        sprite_renderer: &'a sprite::Renderer<R>,
+    ) -> Self {
+        Self {
+            factory: factory,
+            encoder: encoder,
+            out: out,
+            sprite_renderer: sprite_renderer,
+        }
     }
 }
 
-impl<'a, 'c, F, R> System<'a> for RenderSystem<'c, F, R> where
-    F: gfx::Factory<R> + 'c,
-    R: gfx::Resources + 'c,
+impl<'a, 'b, F, C, R> System<'b> for RenderSystem<'a, F, C, R>
+where
+    F: gfx::Factory<R>,
+    C: gfx::CommandBuffer<R>,
+    R: gfx::Resources,
 {
     type SystemData = (
-        Fetch<'a, Assets<gfx_device_gl::Resources>>, // TODO: make this generic
-        Fetch<'a, Map>,
-        ReadStorage<'a, Position>,
-        ReadStorage<'a, Size>,
-        ReadStorage<'a, Sprite>,
+        Fetch<'b, Assets<R>>,
+        Fetch<'b, Map>,
+        ReadStorage<'b, Position>,
+        ReadStorage<'b, Size>,
+        ReadStorage<'b, Sprite>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
-        // let (assets, map, positions, sizes, sprites) = data;
+        let (assets, map, positions, sizes, sprites) = data;
 
         // let tileset = &map.map.tilesets[0];
         // let tileset_image = assets.images[&tileset.name].clone();
@@ -87,5 +106,17 @@ impl<'a, 'c, F, R> System<'a> for RenderSystem<'c, F, R> where
         //         )
         //         .unwrap();
         // }
+
+        for (position, _size, sprite) in (&positions, &sizes, &sprites).join() {
+            let texture = &assets.images[sprite.image_id];
+
+            let mut sprite = sprite::Sprite::new();
+            sprite.set_pos(-0.5, -0.5);
+            sprite.set_size(1.0, 1.0);
+            sprite.set_tex_rect(0.0, 0.0, 1.0, 1.0);
+
+            self.sprite_renderer
+                .render_sprite(self.encoder, &self.out, &sprite, texture);
+        }
     }
 }
