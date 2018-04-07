@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use std::string::String;
 
 use gfx;
-use gfx::format::Rgba8;
+use gfx::format::Srgba8;
 use gfx::handle::ShaderResourceView;
 use gfx::texture::Mipmap;
 use image;
@@ -39,7 +39,7 @@ where
         let (w, h) = img.dimensions();
         let kind = gfx::texture::Kind::D2(w as u16, h as u16, gfx::texture::AaMode::Single);
         let (_, view) = factory
-            .create_texture_immutable_u8::<Rgba8>(kind, Mipmap::Provided, &[&img])
+            .create_texture_immutable_u8::<Srgba8>(kind, Mipmap::Provided, &[&img])
             .expect(&format!("Error creating texture for image {}", &name));
 
         self.images.insert(name, view);

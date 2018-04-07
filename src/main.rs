@@ -3,18 +3,29 @@ extern crate specs;
 #[macro_use]
 extern crate specs_derive;
 extern crate tiled;
+#[macro_use]
+extern crate gfx;
+extern crate gfx_window_glutin;
+extern crate glutin;
+extern crate image;
 
 mod components;
 mod cursor;
 mod movement;
 mod render;
 mod resources;
+mod sprite;
 
 use std::default::Default;
 use std::path::Path;
 use std::time;
 
 use cgmath::Point2;
+use gfx::Device;
+use gfx::format::{DepthStencil, Srgba8};
+use gfx::handle::RenderTargetView;
+use glutin::{ContextBuilder, ElementState, Event, EventsLoop, GlContext, KeyboardInput,
+             VirtualKeyCode, WindowBuilder, WindowEvent};
 use specs::{RunNow, World};
 
 use components::{Cursor, CursorState, Movement, Position, Size, Sprite};
@@ -22,20 +33,6 @@ use cursor::CursorSystem;
 use movement::MovementSystem;
 use render::RenderSystem;
 use resources::{Assets, DeltaTime, Input, Map};
-
-#[macro_use]
-extern crate gfx;
-extern crate gfx_window_glutin;
-extern crate glutin;
-extern crate image;
-
-mod sprite;
-
-use gfx::Device;
-use gfx::format::{DepthStencil, Rgba8};
-use gfx::handle::RenderTargetView;
-use glutin::{ContextBuilder, ElementState, Event, EventsLoop, GlContext, KeyboardInput,
-             VirtualKeyCode, WindowBuilder, WindowEvent};
 
 struct Game {
     world: World,
@@ -142,7 +139,7 @@ impl Game {
         &mut self,
         factory: &mut F,
         encoder: &mut gfx::Encoder<R, C>,
-        out: &RenderTargetView<R, Rgba8>,
+        out: &RenderTargetView<R, Srgba8>,
         sprite_renderer: &sprite::Renderer<R>,
     ) where
         F: gfx::Factory<R>,
@@ -164,7 +161,7 @@ fn main() {
         .with_dimensions(1280, 800);
     let cb = ContextBuilder::new();
     let (window, mut device, mut factory, mut rtv, mut stv) =
-        gfx_window_glutin::init::<Rgba8, DepthStencil>(wb, cb, &events_loop);
+        gfx_window_glutin::init::<Srgba8, DepthStencil>(wb, cb, &events_loop);
 
     let mut encoder: gfx::Encoder<_, _> = factory.create_command_buffer().into();
 

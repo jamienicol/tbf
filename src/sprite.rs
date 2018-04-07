@@ -1,6 +1,6 @@
 use cgmath;
 use gfx;
-use gfx::format::Rgba8;
+use gfx::format::Srgba8;
 use gfx::handle::{Buffer, RenderTargetView, Sampler, ShaderResourceView};
 use gfx::traits::FactoryExt;
 use gfx::{Encoder, Factory, PipelineState, Resources};
@@ -16,7 +16,7 @@ gfx_defines! {
         vbuf: gfx::VertexBuffer<Vertex> = (),
         texture: gfx::TextureSampler<[f32; 4]> = "t_Texture",
         proj: gfx::Global<[[f32; 4]; 4]> = "u_Proj",
-        out: gfx::BlendTarget<Rgba8> =
+        out: gfx::BlendTarget<Srgba8> =
             ("Target0", gfx::state::ColorMask::all(), gfx::preset::blend::ALPHA),
     }
 }
@@ -115,7 +115,7 @@ where
     pub fn render_sprite<C>(
         &self,
         encoder: &mut Encoder<R, C>,
-        out: &RenderTargetView<R, Rgba8>,
+        out: &RenderTargetView<R, Srgba8>,
         sprite: &Sprite,
         texture: &ShaderResourceView<R, [f32; 4]>,
     ) where

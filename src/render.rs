@@ -1,5 +1,5 @@
 use gfx;
-use gfx::format::Rgba8;
+use gfx::format::Srgba8;
 use gfx::handle::RenderTargetView;
 use specs::{Fetch, Join, ReadStorage, System};
 
@@ -16,7 +16,7 @@ where
 {
     factory: &'a mut F,
     encoder: &'a mut gfx::Encoder<R, C>,
-    out: &'a RenderTargetView<R, Rgba8>,
+    out: &'a RenderTargetView<R, Srgba8>,
     sprite_renderer: &'a sprite::Renderer<R>,
 }
 
@@ -29,7 +29,7 @@ where
     pub fn new(
         factory: &'a mut F,
         encoder: &'a mut gfx::Encoder<R, C>,
-        out: &'a RenderTargetView<R, Rgba8>,
+        out: &'a RenderTargetView<R, Srgba8>,
         sprite_renderer: &'a sprite::Renderer<R>,
     ) -> Self {
         Self {
