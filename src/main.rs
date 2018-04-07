@@ -34,7 +34,8 @@ mod sprite;
 use gfx::Device;
 use gfx::format::{DepthStencil, Rgba8};
 use gfx::handle::RenderTargetView;
-use glutin::{ContextBuilder, ElementState, Event, EventsLoop, GlContext, KeyboardInput, VirtualKeyCode, WindowBuilder, WindowEvent};
+use glutin::{ContextBuilder, ElementState, Event, EventsLoop, GlContext, KeyboardInput,
+             VirtualKeyCode, WindowBuilder, WindowEvent};
 
 struct Game {
     world: World,
@@ -43,7 +44,8 @@ struct Game {
 }
 
 impl Game {
-    fn new<F, R>(factory: &mut F) -> Self where
+    fn new<F, R>(factory: &mut F) -> Self
+    where
         F: gfx::Factory<R>,
         R: gfx::Resources,
     {
@@ -59,20 +61,16 @@ impl Game {
         assets.load_image(factory, "cursor.png", "cursor".to_string());
 
         // Load map
-        let map = tiled::parse_file(Path::new("resources/pitch.tmx")).expect("Failed to parse map.");
+        let map =
+            tiled::parse_file(Path::new("resources/pitch.tmx")).expect("Failed to parse map.");
         for tileset in &map.tilesets {
-            assets.load_image(
-                factory,
-                &tileset.images[0].source,
-                tileset.name.clone(),
-            );
+            assets.load_image(factory, &tileset.images[0].source, tileset.name.clone());
         }
 
         world.add_resource(DeltaTime { dt: 0.0 });
         world.add_resource(assets);
         world.add_resource(Input::default());
         world.add_resource(Map { map: map });
-
 
         // Create cursor
         world
@@ -110,26 +108,26 @@ impl Game {
                     ElementState::Pressed => true,
                     ElementState::Released => false,
                 };
-            },
+            }
             Some(VirtualKeyCode::Up) => {
                 input.up = match event.state {
                     ElementState::Pressed => true,
                     ElementState::Released => false,
                 };
-            },
+            }
             Some(VirtualKeyCode::Right) => {
                 input.right = match event.state {
                     ElementState::Pressed => true,
                     ElementState::Released => false,
                 };
-            },
+            }
             Some(VirtualKeyCode::Down) => {
                 input.down = match event.state {
                     ElementState::Pressed => true,
                     ElementState::Released => false,
                 };
-            },
-            _ => {},
+            }
+            _ => {}
         }
     }
 
@@ -140,11 +138,13 @@ impl Game {
         self.movement_system.run_now(&self.world.res);
     }
 
-    fn render<F, R, C>(&mut self,
-                       factory: &mut F,
-                       encoder: &mut gfx::Encoder<R, C>,
-                       out: &RenderTargetView<R, Rgba8>,
-                       sprite_renderer: &sprite::Renderer<R>) where
+    fn render<F, R, C>(
+        &mut self,
+        factory: &mut F,
+        encoder: &mut gfx::Encoder<R, C>,
+        out: &RenderTargetView<R, Rgba8>,
+        sprite_renderer: &sprite::Renderer<R>,
+    ) where
         F: gfx::Factory<R>,
         R: gfx::Resources,
         C: gfx::CommandBuffer<R>,
@@ -181,13 +181,13 @@ fn main() {
                 match event {
                     WindowEvent::Closed => {
                         running = false;
-                    },
+                    }
                     WindowEvent::Resized(_, _) => {
                         gfx_window_glutin::update_views(&window, &mut rtv, &mut stv);
-                    },
+                    }
                     WindowEvent::KeyboardInput { device_id, input } => {
                         game.on_keyboard_event(&input);
-                    },
+                    }
                     _ => (),
                 }
             }

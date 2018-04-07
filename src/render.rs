@@ -77,10 +77,7 @@ where
                     (y * map.map.tile_height) as f32,
                 );
 
-                sprite.set_size(
-                    tileset.tile_width as f32,
-                    tileset.tile_height as f32
-                );
+                sprite.set_size(tileset.tile_width as f32, tileset.tile_height as f32);
 
                 sprite.set_tex_rect(
                     (tile_x * tileset.tile_width) as f32 / tileset.images[0].width as f32,
@@ -90,8 +87,12 @@ where
                 );
 
                 // TODO: batch these
-                self.sprite_renderer
-                    .render_sprite(self.encoder, &self.out, &sprite, tileset_texture);
+                self.sprite_renderer.render_sprite(
+                    self.encoder,
+                    &self.out,
+                    &sprite,
+                    tileset_texture,
+                );
             }
         }
 
