@@ -1,155 +1,29 @@
 extern crate cgmath;
-extern crate specs;
-#[macro_use]
-extern crate specs_derive;
-extern crate tiled;
 #[macro_use]
 extern crate gfx;
 extern crate gfx_window_glutin;
 extern crate glutin;
 extern crate image;
+extern crate specs;
+#[macro_use]
+extern crate specs_derive;
+extern crate tiled;
 
 mod components;
 mod cursor;
+mod game;
 mod movement;
 mod render;
 mod resources;
 mod sprite;
 
-use std::default::Default;
-use std::path::Path;
 use std::time;
 
-use cgmath::Point2;
 use gfx::Device;
 use gfx::format::{DepthStencil, Srgba8};
-use gfx::handle::RenderTargetView;
-use glutin::{ContextBuilder, ElementState, Event, EventsLoop, GlContext, KeyboardInput,
-             VirtualKeyCode, WindowBuilder, WindowEvent};
-use specs::{RunNow, World};
+use glutin::{ContextBuilder, Event, EventsLoop, GlContext, WindowBuilder, WindowEvent};
 
-use components::{Cursor, CursorState, Movement, Position, Size, Sprite};
-use cursor::CursorSystem;
-use movement::MovementSystem;
-use render::RenderSystem;
-use resources::{Assets, DeltaTime, Input, Map};
-
-struct Game {
-    world: World,
-    cursor_system: CursorSystem,
-    movement_system: MovementSystem,
-}
-
-impl Game {
-    fn new<F, R>(factory: &mut F) -> Self
-    where
-        F: gfx::Factory<R>,
-        R: gfx::Resources,
-    {
-        let mut world = World::new();
-        world.register::<Position>();
-        world.register::<Movement>();
-        world.register::<Size>();
-        world.register::<Sprite>();
-        world.register::<Cursor>();
-
-        let mut assets = Assets::new();
-
-        assets.load_image(factory, "cursor.png", "cursor".to_string());
-
-        // Load map
-        let map =
-            tiled::parse_file(Path::new("resources/pitch.tmx")).expect("Failed to parse map.");
-        for tileset in &map.tilesets {
-            assets.load_image(factory, &tileset.images[0].source, tileset.name.clone());
-        }
-
-        world.add_resource(DeltaTime { dt: 0.0 });
-        world.add_resource(assets);
-        world.add_resource(Input::default());
-        world.add_resource(Map { map: map });
-
-        // Create cursor
-        world
-            .create_entity()
-            .with(Cursor {
-                state: CursorState::Still,
-            })
-            .with(Position {
-                pos: Point2::new(0.0, 0.0),
-            })
-            .with(Size {
-                width: 64.0,
-                height: 64.0,
-            })
-            .with(Movement::new())
-            .with(Sprite { image_id: "cursor" })
-            .build();
-
-        let cursor_system = CursorSystem;
-        let movement_system = MovementSystem;
-
-        Self {
-            world: world,
-            cursor_system: cursor_system,
-            movement_system: movement_system,
-        }
-    }
-
-    fn on_keyboard_event(&mut self, event: &KeyboardInput) {
-        let mut input = self.world.write_resource::<Input>();
-
-        match event.virtual_keycode {
-            Some(VirtualKeyCode::Left) => {
-                input.left = match event.state {
-                    ElementState::Pressed => true,
-                    ElementState::Released => false,
-                };
-            }
-            Some(VirtualKeyCode::Up) => {
-                input.up = match event.state {
-                    ElementState::Pressed => true,
-                    ElementState::Released => false,
-                };
-            }
-            Some(VirtualKeyCode::Right) => {
-                input.right = match event.state {
-                    ElementState::Pressed => true,
-                    ElementState::Released => false,
-                };
-            }
-            Some(VirtualKeyCode::Down) => {
-                input.down = match event.state {
-                    ElementState::Pressed => true,
-                    ElementState::Released => false,
-                };
-            }
-            _ => {}
-        }
-    }
-
-    fn update(&mut self, dt: f32) {
-        self.world.write_resource::<DeltaTime>().dt = dt;
-
-        self.cursor_system.run_now(&self.world.res);
-        self.movement_system.run_now(&self.world.res);
-    }
-
-    fn render<F, R, C>(
-        &mut self,
-        factory: &mut F,
-        encoder: &mut gfx::Encoder<R, C>,
-        out: &RenderTargetView<R, Srgba8>,
-        sprite_renderer: &sprite::Renderer<R>,
-    ) where
-        F: gfx::Factory<R>,
-        R: gfx::Resources,
-        C: gfx::CommandBuffer<R>,
-    {
-        let mut rs = RenderSystem::new(factory, encoder, out, sprite_renderer);
-        rs.run_now(&self.world.res);
-    }
-}
+use game::Game;
 
 fn main() {
     // Wayland backend has some issues, force X for now.
@@ -182,7 +56,7 @@ fn main() {
                     WindowEvent::Resized(_, _) => {
                         gfx_window_glutin::update_views(&window, &mut rtv, &mut stv);
                     }
-                    WindowEvent::KeyboardInput { device_id, input } => {
+                    WindowEvent::KeyboardInput { input, .. } => {
                         game.on_keyboard_event(&input);
                     }
                     _ => (),
