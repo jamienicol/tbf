@@ -62,6 +62,8 @@ where
         let tileset = &map.map.tilesets[0];
         let tileset_texture = &assets.images[&tileset.name];
 
+        let mut spritebatch = two::SpriteBatch::new();
+
         let layer = &map.map.layers[0];
         for x in 0..map.map.width {
             for y in 0..map.map.height {
@@ -86,15 +88,17 @@ where
                     height: tileset.tile_height as f32 / tileset.images[0].height as f32,
                 };
 
-                // TODO: batch these
-                self.renderer.render_sprite(
-                    self.encoder,
-                    &self.out,
-                    &sprite,
-                    tileset_texture,
-                );
+                spritebatch.sprites.push(sprite);
             }
         }
+
+        self.renderer.render_spritebatch(
+            self.factory,
+            self.encoder,
+            &self.out,
+            &spritebatch,
+            tileset_texture,
+        );
 
         // render sprite components
         for (position, size, sprite) in (&positions, &sizes, &sprites).join() {
@@ -115,7 +119,7 @@ where
             };
 
             self.renderer
-                .render_sprite(self.encoder, &self.out, &sprite, texture);
+                .render_sprite(self.factory, self.encoder, &self.out, &sprite, texture);
         }
     }
 }

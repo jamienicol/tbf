@@ -1,4 +1,5 @@
 use std::path::Path;
+use std::vec::Vec;
 
 use cgmath;
 use gfx;
@@ -69,29 +70,19 @@ where
     }
 }
 
-pub struct Sprite<R>
-    where R: gfx::Resources
+pub struct Sprite
 {
     pub dest: Rect,
     pub src: Rect,
-    vbuf: handle::Buffer<R, Vertex>,
 }
 
-impl<R> Sprite<R>
-where R: gfx::Resources
+impl Sprite
 {
-    pub fn new<F>(factory: &mut F) -> Self
-    where F: gfx::Factory<R>
+    pub fn new<F, R>(factory: &mut F) -> Self
+    where
+        F: gfx::Factory<R>,
+        R: gfx::Resources,
     {
-        let vbuf = factory
-            .create_buffer(
-                6,
-                gfx::buffer::Role::Vertex,
-                gfx::memory::Usage::Dynamic,
-                gfx::memory::Bind::empty(),
-            )
-            .expect("Failed to create vertex buffer");
-
         Self {
             dest: Rect {
                 x: 0.0,
@@ -105,7 +96,19 @@ where R: gfx::Resources
                 width: 1.0,
                 height: 1.0,
             },
-            vbuf: vbuf,
+        }
+    }
+}
+
+pub struct SpriteBatch
+{
+    pub sprites: Vec<Sprite>,
+}
+
+impl SpriteBatch {
+    pub fn new() -> Self {
+        Self {
+            sprites: Vec::new(),
         }
     }
 }
@@ -144,13 +147,15 @@ where
         }
     }
 
-    pub fn render_sprite<C>(
+    pub fn render_sprite<F, C>(
         &self,
+        factory: &mut F,
         encoder: &mut gfx::Encoder<R, C>,
         out: &handle::RenderTargetView<R, ColorFormat>,
-        sprite: &Sprite<R>,
+        sprite: &Sprite,
         texture: &Texture<R>,
     ) where
+        F: gfx::Factory<R>,
         C: gfx::CommandBuffer<R>,
     {
         let vertices: [Vertex; 6] = [
@@ -189,7 +194,17 @@ where
             },
         ];
 
-        encoder.update_buffer(&sprite.vbuf, &vertices, 0).unwrap();
+        // TODO: creating a new buffer every draw can't be the most efficient
+        let vbuf = factory
+            .create_buffer(
+                6,
+                gfx::buffer::Role::Vertex,
+                gfx::memory::Usage::Dynamic,
+                gfx::memory::Bind::empty(),
+            )
+            .expect("Failed to create vertex buffer");
+
+        encoder.update_buffer(&vbuf, &vertices, 0).unwrap();
 
         let slice = gfx::Slice {
             start: 0,
@@ -200,12 +215,29 @@ where
         };
 
         let data = pipe::Data {
-            vbuf: sprite.vbuf.clone(),
+            vbuf: vbuf,
             texture: (texture.view.clone(), texture.sampler.clone()),
             proj: cgmath::ortho(0.0, 1280.0, 768.0, 0.0, 1.0, 0.0).into(),
             out: out.clone(),
         };
 
         encoder.draw(&slice, &self.pso, &data);
+    }
+
+    pub fn render_spritebatch<F, C>(
+        &self,
+        factory: &mut F,
+        encoder: &mut gfx::Encoder<R, C>,
+        out: &handle::RenderTargetView<R, ColorFormat>,
+        spritebatch: &SpriteBatch,
+        texture: &Texture<R>,
+    ) where
+        F: gfx::Factory<R>,
+        C: gfx::CommandBuffer<R>,
+    {
+        // TODO: implement this properly
+        for sprite in &spritebatch.sprites {
+            self.render_sprite(factory, encoder, out, sprite, texture);
+        }
     }
 }
