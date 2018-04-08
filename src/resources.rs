@@ -6,13 +6,13 @@ use std::string::String;
 use gfx;
 use tiled;
 
-use sprite;
+use two;
 
 pub struct Assets<R>
 where
     R: gfx::Resources,
 {
-    pub images: HashMap<String, sprite::Texture<R>>,
+    pub images: HashMap<String, two::Texture<R>>,
 }
 
 impl<R> Assets<R>
@@ -31,7 +31,7 @@ where
     {
         let mut full_path = PathBuf::from("resources");
         full_path.push(&path);
-        let texture = sprite::Texture::new(factory, &full_path);
+        let texture = two::Texture::new(factory, &full_path);
 
         self.images.insert(name, texture);
     }

@@ -15,7 +15,7 @@ mod game;
 mod movement;
 mod render;
 mod resources;
-mod sprite;
+mod two;
 
 use std::time;
 
@@ -39,7 +39,7 @@ fn main() {
 
     let mut encoder: gfx::Encoder<_, _> = factory.create_command_buffer().into();
 
-    let renderer = sprite::Renderer::new(&mut factory);
+    let renderer = two::Renderer::new(&mut factory);
 
     let mut game = Game::new(&mut factory);
 

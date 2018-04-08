@@ -6,7 +6,7 @@ use specs::{Fetch, Join, ReadStorage, System};
 use components::{Position, Size, Sprite};
 use resources::{Assets, Map};
 
-use sprite;
+use two;
 
 pub struct RenderSystem<'a, F, C, R>
 where
@@ -17,7 +17,7 @@ where
     factory: &'a mut F,
     encoder: &'a mut gfx::Encoder<R, C>,
     out: &'a RenderTargetView<R, Srgba8>,
-    sprite_renderer: &'a sprite::Renderer<R>,
+    renderer: &'a two::Renderer<R>,
 }
 
 impl<'a, F, C, R> RenderSystem<'a, F, C, R>
@@ -30,13 +30,13 @@ where
         factory: &'a mut F,
         encoder: &'a mut gfx::Encoder<R, C>,
         out: &'a RenderTargetView<R, Srgba8>,
-        sprite_renderer: &'a sprite::Renderer<R>,
+        renderer: &'a two::Renderer<R>,
     ) -> Self {
         Self {
             factory: factory,
             encoder: encoder,
             out: out,
-            sprite_renderer: sprite_renderer,
+            renderer: renderer,
         }
     }
 }
@@ -70,16 +70,16 @@ where
                 let tile_y = (gid - 1) / (tileset.images[0].width as u32 / tileset.tile_width);
                 let tile_x = (gid - 1) % (tileset.images[0].width as u32 / tileset.tile_width);
 
-                let mut sprite = sprite::Sprite::new();
+                let mut sprite = two::Sprite::new();
 
-                sprite.dest = sprite::Rect {
+                sprite.dest = two::Rect {
                     x: (x * map.map.tile_width) as f32,
                     y: (y * map.map.tile_height) as f32,
                     width: tileset.tile_width as f32,
                     height: tileset.tile_height as f32,
                 };
 
-                sprite.src = sprite::Rect {
+                sprite.src = two::Rect {
                     x: (tile_x * tileset.tile_width) as f32 / tileset.images[0].width as f32,
                     y: (tile_y * tileset.tile_height) as f32 / tileset.images[0].height as f32,
                     width: tileset.tile_width as f32 / tileset.images[0].width as f32,
@@ -87,7 +87,7 @@ where
                 };
 
                 // TODO: batch these
-                self.sprite_renderer.render_sprite(
+                self.renderer.render_sprite(
                     self.encoder,
                     &self.out,
                     &sprite,
@@ -100,21 +100,21 @@ where
         for (position, size, sprite) in (&positions, &sizes, &sprites).join() {
             let texture = &assets.images[sprite.image_id];
 
-            let mut sprite = sprite::Sprite::new();
-            sprite.dest = sprite::Rect {
+            let mut sprite = two::Sprite::new();
+            sprite.dest = two::Rect {
                 x: position.pos.x,
                 y: position.pos.y,
                 width: size.width,
                 height: size.height,
             };
-            sprite.src = sprite::Rect {
+            sprite.src = two::Rect {
                 x: 0.0,
                 y: 0.0,
                 width: 1.0,
                 height: 1.0,
             };
 
-            self.sprite_renderer
+            self.renderer
                 .render_sprite(self.encoder, &self.out, &sprite, texture);
         }
     }

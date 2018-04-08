@@ -13,7 +13,7 @@ use cursor::CursorSystem;
 use movement::MovementSystem;
 use render::RenderSystem;
 use resources::{Assets, DeltaTime, Input, Map};
-use sprite;
+use two;
 
 pub struct Game {
     world: World,
@@ -121,13 +121,13 @@ impl Game {
         factory: &mut F,
         encoder: &mut gfx::Encoder<R, C>,
         out: &RenderTargetView<R, Srgba8>,
-        sprite_renderer: &sprite::Renderer<R>,
+        renderer: &two::Renderer<R>,
     ) where
         F: gfx::Factory<R>,
         R: gfx::Resources,
         C: gfx::CommandBuffer<R>,
     {
-        let mut rs = RenderSystem::new(factory, encoder, out, sprite_renderer);
+        let mut rs = RenderSystem::new(factory, encoder, out, renderer);
         rs.run_now(&self.world.res);
     }
 }
