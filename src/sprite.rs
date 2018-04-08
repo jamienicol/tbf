@@ -1,9 +1,20 @@
+use std::path::Path;
+
 use cgmath;
 use gfx;
-use gfx::format::Srgba8;
-use gfx::handle::{Buffer, RenderTargetView, Sampler, ShaderResourceView};
+use gfx::handle;
 use gfx::traits::FactoryExt;
-use gfx::{Encoder, Factory, PipelineState, Resources};
+use gfx::format::Formatted;
+use image;
+
+pub struct Rect {
+    pub x: f32,
+    pub y: f32,
+    pub width: f32,
+    pub height: f32,
+}
+
+pub type ColorFormat = gfx::format::Srgba8;
 
 gfx_defines! {
     vertex Vertex {
@@ -16,69 +27,87 @@ gfx_defines! {
         vbuf: gfx::VertexBuffer<Vertex> = (),
         texture: gfx::TextureSampler<[f32; 4]> = "t_Texture",
         proj: gfx::Global<[[f32; 4]; 4]> = "u_Proj",
-        out: gfx::BlendTarget<Srgba8> =
+        out: gfx::BlendTarget<ColorFormat> =
             ("Target0", gfx::state::ColorMask::all(), gfx::preset::blend::ALPHA),
     }
 }
 
+pub struct Texture<R>
+where
+    R: gfx::Resources,
+{
+    _texture: handle::Texture<R, <ColorFormat as Formatted>::Surface>,
+    view: handle::ShaderResourceView<R, <ColorFormat as Formatted>::View>,
+    sampler: handle::Sampler<R>,
+}
+
+impl<R> Texture<R>
+where
+    R: gfx::Resources,
+{
+    pub fn new<F>(factory: &mut F, path: &Path) -> Self
+    where
+        F: gfx::Factory<R>,
+    {
+        let img = image::open(path)
+            .expect(&format!("Error opening image file {:?}", path))
+            .to_rgba();
+        let (w, h) = img.dimensions();
+        let kind = gfx::texture::Kind::D2(w as u16, h as u16, gfx::texture::AaMode::Single);
+
+        let (texture, view) = factory
+            .create_texture_immutable_u8::<ColorFormat>(kind, gfx::texture::Mipmap::Provided, &[&img])
+            .expect("Error creating texture");
+
+        let sampler = factory.create_sampler_linear();
+
+        Self {
+            _texture: texture,
+            view: view,
+            sampler: sampler,
+        }
+    }
+}
+
 pub struct Sprite {
-    x: f32,
-    y: f32,
-    width: f32,
-    height: f32,
-    tex_left: f32,
-    tex_top: f32,
-    tex_width: f32,
-    tex_height: f32,
+    pub dest: Rect,
+    pub src: Rect,
 }
 
 impl Sprite {
-    pub fn new() -> Sprite {
-        Sprite {
-            x: 0.0,
-            y: 0.0,
-            width: 0.0,
-            height: 0.0,
-            tex_left: 0.0,
-            tex_top: 0.0,
-            tex_width: 0.0,
-            tex_height: 0.0,
+    pub fn new() -> Self {
+        Self {
+            dest: Rect {
+                x: 0.0,
+                y: 0.0,
+                width: 0.0,
+                height: 0.0,
+            },
+            src: Rect {
+                x: 0.0,
+                y: 0.0,
+                width: 1.0,
+                height: 1.0,
+            },
         }
-    }
-    pub fn set_pos(&mut self, x: f32, y: f32) {
-        self.x = x;
-        self.y = y;
-    }
-
-    pub fn set_size(&mut self, width: f32, height: f32) {
-        self.width = width;
-        self.height = height;
-    }
-
-    pub fn set_tex_rect(&mut self, left: f32, top: f32, width: f32, height: f32) {
-        self.tex_left = left;
-        self.tex_top = top;
-        self.tex_width = width;
-        self.tex_height = height;
     }
 }
 
 pub struct Renderer<R>
 where
-    R: Resources,
+    R: gfx::Resources,
 {
-    pso: PipelineState<R, pipe::Meta>,
-    sampler: Sampler<R>,
-    vbuf: Buffer<R, Vertex>,
+    pso: gfx::PipelineState<R, pipe::Meta>,
+    vbuf: handle::Buffer<R, Vertex>,
 }
 
 impl<R> Renderer<R>
 where
-    R: Resources,
+    R: gfx::Resources,
 {
     pub fn new<F>(factory: &mut F) -> Renderer<R>
     where
-        F: Factory<R>,
+        F: gfx::Factory<R>,
     {
         let pso = factory
             .create_pipeline_simple(
@@ -94,8 +123,6 @@ where
             )
             .unwrap();
 
-        let sampler = factory.create_sampler_linear();
-
         let vbuf = factory
             .create_buffer(
                 6,
@@ -107,52 +134,51 @@ where
 
         Renderer {
             pso: pso,
-            sampler: sampler,
             vbuf: vbuf,
         }
     }
 
     pub fn render_sprite<C>(
         &self,
-        encoder: &mut Encoder<R, C>,
-        out: &RenderTargetView<R, Srgba8>,
+        encoder: &mut gfx::Encoder<R, C>,
+        out: &handle::RenderTargetView<R, ColorFormat>,
         sprite: &Sprite,
-        texture: &ShaderResourceView<R, [f32; 4]>,
+        texture: &Texture<R>,
     ) where
         C: gfx::CommandBuffer<R>,
     {
         let vertices: [Vertex; 6] = [
             Vertex {
-                pos: [sprite.x, sprite.y],
-                uv: [sprite.tex_left, sprite.tex_top],
+                pos: [sprite.dest.x, sprite.dest.y],
+                uv: [sprite.src.x, sprite.src.y],
                 color: [1.0, 1.0, 1.0],
             },
             Vertex {
-                pos: [sprite.x + sprite.width, sprite.y],
-                uv: [sprite.tex_left + sprite.tex_width, sprite.tex_top],
+                pos: [sprite.dest.x + sprite.dest.width, sprite.dest.y],
+                uv: [sprite.src.x + sprite.src.width, sprite.src.y],
                 color: [1.0, 1.0, 1.0],
             },
             Vertex {
-                pos: [sprite.x, sprite.y + sprite.height],
-                uv: [sprite.tex_left, sprite.tex_top + sprite.tex_height],
+                pos: [sprite.dest.x, sprite.dest.y + sprite.dest.height],
+                uv: [sprite.src.x, sprite.src.y + sprite.src.height],
                 color: [1.0, 1.0, 1.0],
             },
             Vertex {
-                pos: [sprite.x + sprite.width, sprite.y],
-                uv: [sprite.tex_left + sprite.tex_width, sprite.tex_top],
+                pos: [sprite.dest.x + sprite.dest.width, sprite.dest.y],
+                uv: [sprite.src.x + sprite.src.width, sprite.src.y],
                 color: [1.0, 1.0, 1.0],
             },
             Vertex {
-                pos: [sprite.x + sprite.width, sprite.y + sprite.height],
+                pos: [sprite.dest.x + sprite.dest.width, sprite.dest.y + sprite.dest.height],
                 uv: [
-                    sprite.tex_left + sprite.tex_width,
-                    sprite.tex_top + sprite.tex_height,
+                    sprite.src.x + sprite.src.width,
+                    sprite.src.y + sprite.src.height,
                 ],
                 color: [1.0, 1.0, 1.0],
             },
             Vertex {
-                pos: [sprite.x, sprite.y + sprite.height],
-                uv: [sprite.tex_left, sprite.tex_top + sprite.tex_height],
+                pos: [sprite.dest.x, sprite.dest.y + sprite.dest.height],
+                uv: [sprite.src.x, sprite.src.y + sprite.src.height],
                 color: [1.0, 1.0, 1.0],
             },
         ];
@@ -169,7 +195,7 @@ where
 
         let data = pipe::Data {
             vbuf: self.vbuf.clone(),
-            texture: (texture.clone(), self.sampler.clone()),
+            texture: (texture.view.clone(), texture.sampler.clone()),
             proj: cgmath::ortho(0.0, 1280.0, 768.0, 0.0, 1.0, 0.0).into(),
             out: out.clone(),
         };

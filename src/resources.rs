@@ -4,17 +4,15 @@ use std::path::PathBuf;
 use std::string::String;
 
 use gfx;
-use gfx::format::Srgba8;
-use gfx::handle::ShaderResourceView;
-use gfx::texture::Mipmap;
-use image;
 use tiled;
+
+use sprite;
 
 pub struct Assets<R>
 where
     R: gfx::Resources,
 {
-    pub images: HashMap<String, ShaderResourceView<R, [f32; 4]>>,
+    pub images: HashMap<String, sprite::Texture<R>>,
 }
 
 impl<R> Assets<R>
@@ -33,16 +31,9 @@ where
     {
         let mut full_path = PathBuf::from("resources");
         full_path.push(&path);
-        let img = image::open(full_path)
-            .expect(&format!("Error opening image file {}", &path))
-            .to_rgba();
-        let (w, h) = img.dimensions();
-        let kind = gfx::texture::Kind::D2(w as u16, h as u16, gfx::texture::AaMode::Single);
-        let (_, view) = factory
-            .create_texture_immutable_u8::<Srgba8>(kind, Mipmap::Provided, &[&img])
-            .expect(&format!("Error creating texture for image {}", &name));
+        let texture = sprite::Texture::new(factory, &full_path);
 
-        self.images.insert(name, view);
+        self.images.insert(name, texture);
     }
 }
 

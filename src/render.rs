@@ -72,19 +72,19 @@ where
 
                 let mut sprite = sprite::Sprite::new();
 
-                sprite.set_pos(
-                    (x * map.map.tile_width) as f32,
-                    (y * map.map.tile_height) as f32,
-                );
+                sprite.dest = sprite::Rect {
+                    x: (x * map.map.tile_width) as f32,
+                    y: (y * map.map.tile_height) as f32,
+                    width: tileset.tile_width as f32,
+                    height: tileset.tile_height as f32,
+                };
 
-                sprite.set_size(tileset.tile_width as f32, tileset.tile_height as f32);
-
-                sprite.set_tex_rect(
-                    (tile_x * tileset.tile_width) as f32 / tileset.images[0].width as f32,
-                    (tile_y * tileset.tile_height) as f32 / tileset.images[0].height as f32,
-                    tileset.tile_width as f32 / tileset.images[0].width as f32,
-                    tileset.tile_height as f32 / tileset.images[0].height as f32,
-                );
+                sprite.src = sprite::Rect {
+                    x: (tile_x * tileset.tile_width) as f32 / tileset.images[0].width as f32,
+                    y: (tile_y * tileset.tile_height) as f32 / tileset.images[0].height as f32,
+                    width: tileset.tile_width as f32 / tileset.images[0].width as f32,
+                    height: tileset.tile_height as f32 / tileset.images[0].height as f32,
+                };
 
                 // TODO: batch these
                 self.sprite_renderer.render_sprite(
@@ -101,9 +101,18 @@ where
             let texture = &assets.images[sprite.image_id];
 
             let mut sprite = sprite::Sprite::new();
-            sprite.set_pos(position.pos.x, position.pos.y);
-            sprite.set_size(size.width, size.height);
-            sprite.set_tex_rect(0.0, 0.0, 1.0, 1.0);
+            sprite.dest = sprite::Rect {
+                x: position.pos.x,
+                y: position.pos.y,
+                width: size.width,
+                height: size.height,
+            };
+            sprite.src = sprite::Rect {
+                x: 0.0,
+                y: 0.0,
+                width: 1.0,
+                height: 1.0,
+            };
 
             self.sprite_renderer
                 .render_sprite(self.encoder, &self.out, &sprite, texture);
