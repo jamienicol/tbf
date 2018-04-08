@@ -70,7 +70,7 @@ where
                 let tile_y = (gid - 1) / (tileset.images[0].width as u32 / tileset.tile_width);
                 let tile_x = (gid - 1) % (tileset.images[0].width as u32 / tileset.tile_width);
 
-                let mut sprite = two::Sprite::new();
+                let mut sprite = two::Sprite::new(self.factory);
 
                 sprite.dest = two::Rect {
                     x: (x * map.map.tile_width) as f32,
@@ -100,7 +100,7 @@ where
         for (position, size, sprite) in (&positions, &sizes, &sprites).join() {
             let texture = &assets.images[sprite.image_id];
 
-            let mut sprite = two::Sprite::new();
+            let mut sprite = two::Sprite::new(self.factory);
             sprite.dest = two::Rect {
                 x: position.pos.x,
                 y: position.pos.y,

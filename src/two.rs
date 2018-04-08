@@ -69,13 +69,29 @@ where
     }
 }
 
-pub struct Sprite {
+pub struct Sprite<R>
+    where R: gfx::Resources
+{
     pub dest: Rect,
     pub src: Rect,
+    vbuf: handle::Buffer<R, Vertex>,
 }
 
-impl Sprite {
-    pub fn new() -> Self {
+impl<R> Sprite<R>
+where R: gfx::Resources
+{
+    pub fn new<F>(factory: &mut F) -> Self
+    where F: gfx::Factory<R>
+    {
+        let vbuf = factory
+            .create_buffer(
+                6,
+                gfx::buffer::Role::Vertex,
+                gfx::memory::Usage::Dynamic,
+                gfx::memory::Bind::empty(),
+            )
+            .expect("Failed to create vertex buffer");
+
         Self {
             dest: Rect {
                 x: 0.0,
@@ -89,6 +105,7 @@ impl Sprite {
                 width: 1.0,
                 height: 1.0,
             },
+            vbuf: vbuf,
         }
     }
 }
@@ -98,7 +115,6 @@ where
     R: gfx::Resources,
 {
     pso: gfx::PipelineState<R, pipe::Meta>,
-    vbuf: handle::Buffer<R, Vertex>,
 }
 
 impl<R> Renderer<R>
@@ -123,18 +139,8 @@ where
             )
             .unwrap();
 
-        let vbuf = factory
-            .create_buffer(
-                6,
-                gfx::buffer::Role::Vertex,
-                gfx::memory::Usage::Dynamic,
-                gfx::memory::Bind::empty(),
-            )
-            .unwrap();
-
         Renderer {
             pso: pso,
-            vbuf: vbuf,
         }
     }
 
@@ -142,7 +148,7 @@ where
         &self,
         encoder: &mut gfx::Encoder<R, C>,
         out: &handle::RenderTargetView<R, ColorFormat>,
-        sprite: &Sprite,
+        sprite: &Sprite<R>,
         texture: &Texture<R>,
     ) where
         C: gfx::CommandBuffer<R>,
@@ -183,7 +189,7 @@ where
             },
         ];
 
-        encoder.update_buffer(&self.vbuf, &vertices, 0).unwrap();
+        encoder.update_buffer(&sprite.vbuf, &vertices, 0).unwrap();
 
         let slice = gfx::Slice {
             start: 0,
@@ -194,7 +200,7 @@ where
         };
 
         let data = pipe::Data {
-            vbuf: self.vbuf.clone(),
+            vbuf: sprite.vbuf.clone(),
             texture: (texture.view.clone(), texture.sampler.clone()),
             proj: cgmath::ortho(0.0, 1280.0, 768.0, 0.0, 1.0, 0.0).into(),
             out: out.clone(),
