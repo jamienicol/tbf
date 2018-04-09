@@ -6,6 +6,7 @@ use gfx;
 use gfx::handle;
 use gfx::traits::FactoryExt;
 use gfx::format::Formatted;
+use gfx::texture::{FilterMethod, SamplerInfo, WrapMode};
 use image;
 
 pub struct Rect {
@@ -60,7 +61,8 @@ where
             .create_texture_immutable_u8::<ColorFormat>(kind, gfx::texture::Mipmap::Provided, &[&img])
             .expect("Error creating texture");
 
-        let sampler = factory.create_sampler_linear();
+        let sampler_info = SamplerInfo::new(FilterMethod::Scale, WrapMode::Clamp);
+        let sampler = factory.create_sampler(sampler_info);
 
         Self {
             _texture: texture,
