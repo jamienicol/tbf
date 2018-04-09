@@ -239,9 +239,73 @@ where
         F: gfx::Factory<R>,
         C: gfx::CommandBuffer<R>,
     {
-        // TODO: implement this properly
+        let mut vertices: Vec<Vertex> = Vec::with_capacity(spritebatch.sprites.len() * 6);
         for sprite in &spritebatch.sprites {
-            self.render_sprite(factory, encoder, out, sprite, texture);
+            vertices.push(Vertex {
+                pos: [sprite.dest.x, sprite.dest.y],
+                uv: [sprite.src.x, sprite.src.y],
+                color: [1.0, 1.0, 1.0],
+            });
+            vertices.push(Vertex {
+                pos: [sprite.dest.x + sprite.dest.width, sprite.dest.y],
+                uv: [sprite.src.x + sprite.src.width, sprite.src.y],
+                color: [1.0, 1.0, 1.0],
+            });
+            vertices.push(Vertex {
+                pos: [sprite.dest.x, sprite.dest.y + sprite.dest.height],
+                uv: [sprite.src.x, sprite.src.y + sprite.src.height],
+                color: [1.0, 1.0, 1.0],
+            });
+            vertices.push(Vertex {
+                pos: [sprite.dest.x + sprite.dest.width, sprite.dest.y],
+                uv: [sprite.src.x + sprite.src.width, sprite.src.y],
+                color: [1.0, 1.0, 1.0],
+            });
+            vertices.push(Vertex {
+                pos: [
+                    sprite.dest.x + sprite.dest.width,
+                    sprite.dest.y + sprite.dest.height,
+                ],
+                uv: [
+                    sprite.src.x + sprite.src.width,
+                    sprite.src.y + sprite.src.height,
+                ],
+                color: [1.0, 1.0, 1.0],
+            });
+            vertices.push(Vertex {
+                pos: [sprite.dest.x, sprite.dest.y + sprite.dest.height],
+                uv: [sprite.src.x, sprite.src.y + sprite.src.height],
+                color: [1.0, 1.0, 1.0],
+            });
         }
+
+        // TODO: creating a new buffer every draw can't be the most efficient
+        let vbuf = factory
+            .create_buffer(
+                vertices.len(),
+                gfx::buffer::Role::Vertex,
+                gfx::memory::Usage::Dynamic,
+                gfx::memory::Bind::empty(),
+            )
+            .expect("Failed to create vertex buffer");
+
+        encoder.update_buffer(&vbuf, &vertices, 0).unwrap();
+
+        let slice = gfx::Slice {
+            start: 0,
+            end: 6 * vertices.len() as u32,
+            base_vertex: 0,
+            instances: None,
+            buffer: gfx::IndexBuffer::Auto,
+        };
+
+        let data = pipe::Data {
+            vbuf: vbuf,
+            texture: (texture.view.clone(), texture.sampler.clone()),
+            proj: cgmath::ortho(0.0, 1280.0, 768.0, 0.0, 1.0, 0.0).into(),
+            out: out.clone(),
+        };
+
+        encoder.draw(&slice, &self.pso, &data);
     }
 }
