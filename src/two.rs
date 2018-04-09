@@ -3,10 +3,10 @@ use std::vec::Vec;
 
 use cgmath;
 use gfx;
-use gfx::handle;
-use gfx::traits::FactoryExt;
 use gfx::format::Formatted;
+use gfx::handle;
 use gfx::texture::{FilterMethod, SamplerInfo, WrapMode};
+use gfx::traits::FactoryExt;
 use image;
 
 pub struct Rect {
@@ -58,7 +58,11 @@ where
         let kind = gfx::texture::Kind::D2(w as u16, h as u16, gfx::texture::AaMode::Single);
 
         let (texture, view) = factory
-            .create_texture_immutable_u8::<ColorFormat>(kind, gfx::texture::Mipmap::Provided, &[&img])
+            .create_texture_immutable_u8::<ColorFormat>(
+                kind,
+                gfx::texture::Mipmap::Provided,
+                &[&img],
+            )
             .expect("Error creating texture");
 
         let sampler_info = SamplerInfo::new(FilterMethod::Scale, WrapMode::Clamp);
@@ -72,14 +76,12 @@ where
     }
 }
 
-pub struct Sprite
-{
+pub struct Sprite {
     pub dest: Rect,
     pub src: Rect,
 }
 
-impl Sprite
-{
+impl Sprite {
     pub fn new<F, R>(factory: &mut F) -> Self
     where
         F: gfx::Factory<R>,
@@ -102,8 +104,7 @@ impl Sprite
     }
 }
 
-pub struct SpriteBatch
-{
+pub struct SpriteBatch {
     pub sprites: Vec<Sprite>,
 }
 
@@ -144,9 +145,7 @@ where
             )
             .unwrap();
 
-        Renderer {
-            pso: pso,
-        }
+        Renderer { pso: pso }
     }
 
     pub fn render_sprite<F, C>(
@@ -182,7 +181,10 @@ where
                 color: [1.0, 1.0, 1.0],
             },
             Vertex {
-                pos: [sprite.dest.x + sprite.dest.width, sprite.dest.y + sprite.dest.height],
+                pos: [
+                    sprite.dest.x + sprite.dest.width,
+                    sprite.dest.y + sprite.dest.height,
+                ],
                 uv: [
                     sprite.src.x + sprite.src.width,
                     sprite.src.y + sprite.src.height,

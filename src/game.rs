@@ -2,8 +2,8 @@ use std::path::Path;
 
 use cgmath::Point2;
 use gfx;
-use gfx::handle::RenderTargetView;
 use gfx::format::Srgba8;
+use gfx::handle::RenderTargetView;
 use glutin::{ElementState, KeyboardInput, VirtualKeyCode};
 use specs::{RunNow, World};
 use tiled;
