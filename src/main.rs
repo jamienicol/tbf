@@ -19,7 +19,7 @@ mod two;
 use std::time;
 
 use gfx::Device;
-use gfx::format::{DepthStencil, Srgba8};
+use gfx::format::DepthStencil;
 use glutin::{ContextBuilder, Event, EventsLoop, GlContext, WindowBuilder, WindowEvent};
 
 use game::Game;
@@ -34,7 +34,7 @@ fn main() {
         .with_dimensions(1280, 800);
     let cb = ContextBuilder::new();
     let (window, mut device, mut factory, mut rtv, mut stv) =
-        gfx_window_glutin::init::<Srgba8, DepthStencil>(wb, cb, &events_loop);
+        gfx_window_glutin::init::<two::ColorFormat, DepthStencil>(wb, cb, &events_loop);
 
     let mut encoder: gfx::Encoder<_, _> = factory.create_command_buffer().into();
 

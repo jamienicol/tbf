@@ -2,7 +2,6 @@ use std::path::Path;
 
 use cgmath::Point2;
 use gfx;
-use gfx::format::Srgba8;
 use gfx::handle::RenderTargetView;
 use glutin::{ElementState, KeyboardInput, VirtualKeyCode};
 use specs::{RunNow, World};
@@ -151,7 +150,7 @@ impl Game {
         &mut self,
         factory: &mut F,
         encoder: &mut gfx::Encoder<R, C>,
-        out: &RenderTargetView<R, Srgba8>,
+        out: &RenderTargetView<R, two::ColorFormat>,
         renderer: &two::Renderer<R>,
     ) where
         F: gfx::Factory<R>,
