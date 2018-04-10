@@ -1,8 +1,8 @@
 use cgmath::Vector2;
-use specs::{Fetch, Join, System, WriteStorage};
+use specs::{Fetch, FetchMut, Join, ReadStorage, System, WriteStorage};
 
-use components::{Cursor, CursorState, Direction, Position};
-use resources::{DeltaTime, Input};
+use components::{Cursor, CursorState, Direction, Player, Position};
+use resources::{DeltaTime, Input, Turn};
 
 pub struct CursorMovementSystem;
 
@@ -86,5 +86,20 @@ impl<'a> System<'a> for CursorMovementSystem {
                 }
             }
         }
+    }
+}
+
+pub struct PlayerSelectSystem;
+
+impl<'a> System<'a> for PlayerSelectSystem {
+    type SystemData = (
+        Fetch<'a, Input>,
+        FetchMut<'a, Turn>,
+        ReadStorage<'a, Cursor>,
+        ReadStorage<'a, Position>,
+        ReadStorage<'a, Player>,
+    );
+
+    fn run(&mut self, data: Self::SystemData) {
     }
 }

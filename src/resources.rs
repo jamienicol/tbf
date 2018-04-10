@@ -3,7 +3,9 @@ use std::default::Default;
 use std::path::PathBuf;
 use std::string::String;
 
+use cgmath::Point2;
 use gfx;
+use specs::Entity;
 use tiled;
 
 use two;
@@ -48,6 +50,8 @@ pub struct Input {
     pub down: bool,
     pub left: bool,
     pub right: bool,
+    pub select: bool,
+    pub cancel: bool,
 }
 
 impl Default for Input {
@@ -57,10 +61,25 @@ impl Default for Input {
             down: false,
             left: false,
             right: false,
+            select: false,
+            cancel: false,
         }
     }
 }
 
 pub struct Map {
     pub map: tiled::Map,
+}
+
+pub enum TurnState {
+    SelectPlayer,
+    ActionMenu { player: Entity },
+    SelectRunDest { player: Entity },
+    Running { player: Entity, dest: Point2<f32> },
+    SelectPassDest { player: Entity },
+    Passing { player: Entity, dest: Point2<f32> },
+}
+
+pub struct Turn {
+    pub state: TurnState,
 }

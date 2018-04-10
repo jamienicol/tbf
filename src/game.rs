@@ -11,7 +11,7 @@ use tiled;
 use components::{Cursor, CursorState, Player, Position, Size, Sprite};
 use cursor::CursorMovementSystem;
 use render::RenderSystem;
-use resources::{Assets, DeltaTime, Input, Map};
+use resources::{Assets, DeltaTime, Input, Map, Turn, TurnState};
 use two;
 
 pub struct Game {
@@ -48,6 +48,8 @@ impl Game {
         world.add_resource(assets);
         world.add_resource(Input::default());
         world.add_resource(Map { map: map });
+
+        world.add_resource(Turn { state: TurnState::SelectPlayer });
 
         // Create cursor
         world
@@ -135,7 +137,14 @@ impl Game {
     pub fn update(&mut self, dt: f32) {
         self.world.write_resource::<DeltaTime>().dt = dt;
 
-        self.cursor_movement_system.run_now(&self.world.res);
+        match self.world.read_resource::<Turn>().state {
+            TurnState::SelectPlayer => {
+                self.cursor_movement_system.run_now(&self.world.res);
+            }
+            _ => {
+            }
+        }
+
     }
 
     pub fn render<F, R, C>(
