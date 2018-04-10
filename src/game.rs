@@ -8,7 +8,7 @@ use specs::{RunNow, World};
 use tiled;
 
 use components::{Cursor, CursorState, Player, Position, Size, Sprite};
-use cursor::CursorMovementSystem;
+use cursor::{CursorMovementSystem, PlayerSelectSystem};
 use render::RenderSystem;
 use resources::{Assets, DeltaTime, Input, Map, Turn, TurnState};
 use two;
@@ -16,6 +16,7 @@ use two;
 pub struct Game {
     world: World,
     cursor_movement_system: CursorMovementSystem,
+    player_select_system: PlayerSelectSystem,
 }
 
 impl Game {
@@ -94,10 +95,12 @@ impl Game {
             .build();
 
         let cursor_movement_system = CursorMovementSystem;
+        let player_select_system = PlayerSelectSystem;
 
         Self {
             world: world,
             cursor_movement_system: cursor_movement_system,
+            player_select_system: player_select_system,
         }
     }
 
@@ -129,6 +132,12 @@ impl Game {
                     ElementState::Released => false,
                 };
             }
+            Some(VirtualKeyCode::Space) => {
+                input.select = match event.state {
+                    ElementState::Pressed => true,
+                    ElementState::Released => false,
+                };
+            }
             _ => {}
         }
     }
@@ -136,9 +145,11 @@ impl Game {
     pub fn update(&mut self, dt: f32) {
         self.world.write_resource::<DeltaTime>().dt = dt;
 
-        match self.world.read_resource::<Turn>().state {
+        let state = self.world.read_resource::<Turn>().state.clone();
+        match state {
             TurnState::SelectPlayer => {
                 self.cursor_movement_system.run_now(&self.world.res);
+                self.player_select_system.run_now(&self.world.res);
             }
             _ => {
             }

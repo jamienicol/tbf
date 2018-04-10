@@ -71,6 +71,7 @@ pub struct Map {
     pub map: tiled::Map,
 }
 
+#[derive(Clone)]
 pub enum TurnState {
     SelectPlayer,
     ActionMenu { player: Entity },

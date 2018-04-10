@@ -1,8 +1,8 @@
 use cgmath::Vector2;
-use specs::{Fetch, FetchMut, Join, ReadStorage, System, WriteStorage};
+use specs::{Entities, Fetch, FetchMut, Join, ReadStorage, System, WriteStorage};
 
 use components::{Cursor, CursorState, Direction, Player, Position};
-use resources::{DeltaTime, Input, Turn};
+use resources::{DeltaTime, Input, Turn, TurnState};
 
 pub struct CursorMovementSystem;
 
@@ -93,6 +93,7 @@ pub struct PlayerSelectSystem;
 
 impl<'a> System<'a> for PlayerSelectSystem {
     type SystemData = (
+        Entities<'a>,
         Fetch<'a, Input>,
         FetchMut<'a, Turn>,
         ReadStorage<'a, Cursor>,
@@ -101,5 +102,17 @@ impl<'a> System<'a> for PlayerSelectSystem {
     );
 
     fn run(&mut self, data: Self::SystemData) {
+        let (entities, input, mut turn, cursors, positions, players) = data;
+
+        for (cursor, cursor_pos) in (&cursors, &positions).join() {
+            if input.select {
+                for (entity, player, player_pos) in (&*entities, &players, &positions).join() {
+                    if player_pos.pos == cursor_pos.pos {
+                        turn.state = TurnState::ActionMenu { player: entity };
+                        break;
+                    }
+                }
+            }
+        }
     }
 }
