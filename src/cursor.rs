@@ -1,82 +1,88 @@
 use cgmath::Vector2;
 use specs::{Fetch, Join, System, WriteStorage};
 
-use components::{Cursor, CursorState, Movement, MovementStep, Position};
+use components::{Cursor, CursorState, Direction, Position};
 use resources::{DeltaTime, Input};
 
-pub struct CursorSystem;
+pub struct CursorMovementSystem;
 
-impl<'a> System<'a> for CursorSystem {
+fn get_input(input: &Input) -> Option<Direction> {
+    if input.left && !input.right {
+        return Some(Direction::Left);
+    } else if input.up && !input.down {
+        return Some(Direction::Up);
+    } else if input.right && !input.left {
+        return Some(Direction::Right);
+    } else if input.down && !input.up {
+        return Some(Direction::Down);
+    } else {
+        return None;
+    }
+}
+
+fn vector_from_direction(direction: Direction) -> Vector2<f32> {
+    return match direction {
+        Direction::Left => Vector2::new(-1.0, 0.0),
+        Direction::Up => Vector2::new(0.0, -1.0),
+        Direction::Right => Vector2::new(1.0, 0.0),
+        Direction::Down => Vector2::new(0.0, 1.0),
+    };
+}
+
+fn required_time(displacement: f32, velocity: f32) -> f32 {
+    if velocity != 0.0 {
+        displacement / velocity
+    } else {
+        0.0
+    }
+}
+
+impl<'a> System<'a> for CursorMovementSystem {
     type SystemData = (
         Fetch<'a, DeltaTime>,
         Fetch<'a, Input>,
         WriteStorage<'a, Cursor>,
         WriteStorage<'a, Position>,
-        WriteStorage<'a, Movement>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
-        let (dt, input, mut cursors, mut positions, mut movements) = data;
+        let (dt, input, mut cursors, mut positions) = data;
 
         let speed = 320.0;
 
-        for (cursor, position, movement) in (&mut cursors, &mut positions, &mut movements).join() {
-            // if we are not moving then we're allowed to accept a new input command
-            let mut allow_input = movement.steps.is_empty();
+        for (cursor, position) in (&mut cursors, &mut positions).join() {
+            let mut remaining_dt = dt.dt;
 
-            // if we're nearly finished moving then we're
-            // allowed to accept a new input command
-            if movement.steps.len() == 1 {
-                let step = movement.steps.front().unwrap();
-                let disp = step.target - position.pos;
+            while remaining_dt > 0.0 {
+                if cursor.state == CursorState::Still {
+                    if let Some(direction) = get_input(&input) {
+                        let velocity = vector_from_direction(direction.clone()) * speed;
+                        let target = position.pos + vector_from_direction(direction.clone()) * 64.0;
 
-                let required_dt_x = if step.velocity.x != 0.0 {
-                    disp.x / step.velocity.x
-                } else {
-                    0.0
-                };
-
-                let required_dt_y = if step.velocity.y != 0.0 {
-                    disp.y / step.velocity.y
-                } else {
-                    0.0
-                };
-
-                if required_dt_x <= dt.dt && required_dt_y <= dt.dt {
-                    allow_input = true;
-                }
-            }
-
-            if allow_input {
-                let mut target = match movement.steps.back() {
-                    Some(step) => step.target,
-                    None => position.pos,
-                };
-                let mut velocity = Vector2::new(0.0, 0.0);
-
-                if input.up {
-                    target.y -= 64.0;
-                    velocity.y -= speed;
-                }
-                if input.down {
-                    target.y += 64.0;
-                    velocity.y += speed;
-                }
-                if input.left {
-                    target.x -= 64.0;
-                    velocity.x -= speed;
-                }
-                if input.right {
-                    target.x += 64.0;
-                    velocity.x += speed;
+                        cursor.state = CursorState::Moving { velocity, target };
+                    } else {
+                        // Exit the loop as we will not use the remaining time to move.
+                        break;
+                    }
                 }
 
-                if target != position.pos && velocity != Vector2::new(0.0, 0.0) {
-                    cursor.state = CursorState::Moving;
-                    movement.steps.push_back(MovementStep {
-                        target: target,
-                        velocity: velocity,
-                    });
+                if let CursorState::Moving { velocity, target } = cursor.state {
+                    let disp = target - position.pos;
+                    let required_dt_x = required_time(disp.x, velocity.x);
+                    let required_dt_y = required_time(disp.y, velocity.y);
+
+                    let remaining_dt_x = remaining_dt.min(required_dt_x);
+                    let remaining_dt_y = remaining_dt.min(required_dt_y);
+
+                    position.pos += Vector2::new(
+                        velocity.x * remaining_dt_x,
+                        velocity.y * remaining_dt_y,
+                    );
+                    remaining_dt -= remaining_dt_x.max(remaining_dt_y);
+
+                    if position.pos == target {
+                        cursor.state = CursorState::Still;
+                    }
                 }
             }
         }

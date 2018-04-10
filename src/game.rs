@@ -8,17 +8,15 @@ use glutin::{ElementState, KeyboardInput, VirtualKeyCode};
 use specs::{RunNow, World};
 use tiled;
 
-use components::{Cursor, CursorState, Movement, Position, Size, Sprite};
-use cursor::CursorSystem;
-use movement::MovementSystem;
+use components::{Cursor, CursorState, Position, Size, Sprite};
+use cursor::CursorMovementSystem;
 use render::RenderSystem;
 use resources::{Assets, DeltaTime, Input, Map};
 use two;
 
 pub struct Game {
     world: World,
-    cursor_system: CursorSystem,
-    movement_system: MovementSystem,
+    cursor_movement_system: CursorMovementSystem,
 }
 
 impl Game {
@@ -29,7 +27,6 @@ impl Game {
     {
         let mut world = World::new();
         world.register::<Position>();
-        world.register::<Movement>();
         world.register::<Size>();
         world.register::<Sprite>();
         world.register::<Cursor>();
@@ -63,17 +60,14 @@ impl Game {
                 width: 64.0,
                 height: 64.0,
             })
-            .with(Movement::new())
             .with(Sprite { image_id: "cursor" })
             .build();
 
-        let cursor_system = CursorSystem;
-        let movement_system = MovementSystem;
+        let cursor_movement_system = CursorMovementSystem;
 
         Self {
             world: world,
-            cursor_system: cursor_system,
-            movement_system: movement_system,
+            cursor_movement_system: cursor_movement_system,
         }
     }
 
@@ -112,8 +106,7 @@ impl Game {
     pub fn update(&mut self, dt: f32) {
         self.world.write_resource::<DeltaTime>().dt = dt;
 
-        self.cursor_system.run_now(&self.world.res);
-        self.movement_system.run_now(&self.world.res);
+        self.cursor_movement_system.run_now(&self.world.res);
     }
 
     pub fn render<F, R, C>(

@@ -12,7 +12,6 @@ extern crate tiled;
 mod components;
 mod cursor;
 mod game;
-mod movement;
 mod render;
 mod resources;
 mod two;

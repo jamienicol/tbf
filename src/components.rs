@@ -1,29 +1,8 @@
-use std::collections::VecDeque;
-
 use cgmath::{Point2, Vector2};
 
 #[derive(Component, Debug)]
 pub struct Position {
     pub pos: Point2<f32>,
-}
-
-#[derive(Clone, Debug)]
-pub struct MovementStep {
-    pub target: Point2<f32>,
-    pub velocity: Vector2<f32>,
-}
-
-#[derive(Component, Debug)]
-pub struct Movement {
-    pub steps: VecDeque<MovementStep>,
-}
-
-impl Movement {
-    pub fn new() -> Self {
-        Self {
-            steps: VecDeque::new(),
-        }
-    }
 }
 
 #[derive(Component, Debug)]
@@ -37,10 +16,18 @@ pub struct Sprite {
     pub image_id: &'static str,
 }
 
+#[derive(Debug, Clone)]
+pub enum Direction {
+    Left,
+    Up,
+    Right,
+    Down,
+}
+
 #[derive(Debug, PartialEq)]
 pub enum CursorState {
     Still,
-    Moving,
+    Moving { velocity: Vector2<f32>, target: Point2<f32> },
 }
 
 #[derive(Component, Debug)]
