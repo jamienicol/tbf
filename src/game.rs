@@ -8,7 +8,7 @@ use glutin::{ElementState, KeyboardInput, VirtualKeyCode};
 use specs::{RunNow, World};
 use tiled;
 
-use components::{Cursor, CursorState, Position, Size, Sprite};
+use components::{Cursor, CursorState, Player, Position, Size, Sprite};
 use cursor::CursorMovementSystem;
 use render::RenderSystem;
 use resources::{Assets, DeltaTime, Input, Map};
@@ -26,6 +26,7 @@ impl Game {
         R: gfx::Resources,
     {
         let mut world = World::new();
+        world.register::<Player>();
         world.register::<Position>();
         world.register::<Size>();
         world.register::<Sprite>();
@@ -34,6 +35,7 @@ impl Game {
         let mut assets = Assets::new();
 
         assets.load_image(factory, "cursor.png", "cursor".to_string());
+        assets.load_image(factory, "player.png", "player".to_string());
 
         // Load map
         let map =
@@ -61,6 +63,33 @@ impl Game {
                 height: 64.0,
             })
             .with(Sprite { image_id: "cursor" })
+            .build();
+
+        // Create players
+        world
+            .create_entity()
+            .with(Player {})
+            .with(Position {
+                pos: Point2::new(128.0, 128.0),
+            })
+            .with(Size {
+                width: 64.0,
+                height: 64.0,
+            })
+            .with(Sprite { image_id: "player" })
+            .build();
+
+        world
+            .create_entity()
+            .with(Player {})
+            .with(Position {
+                pos: Point2::new(256.0, 256.0),
+            })
+            .with(Size {
+                width: 64.0,
+                height: 64.0,
+            })
+            .with(Sprite { image_id: "player" })
             .build();
 
         let cursor_movement_system = CursorMovementSystem;

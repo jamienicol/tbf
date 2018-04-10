@@ -34,3 +34,6 @@ pub enum CursorState {
 pub struct Cursor {
     pub state: CursorState,
 }
+
+#[derive(Component)]
+pub struct Player;
