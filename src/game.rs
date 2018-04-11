@@ -8,7 +8,7 @@ use specs::{RunNow, World};
 use tiled;
 
 use components::{Cursor, CursorState, Player, Position, Size, Sprite};
-use cursor::{CursorMovementSystem, PlayerSelectSystem};
+use cursor::{ActionMenuSystem, CursorMovementSystem, PlayerSelectSystem, RunSelectSystem};
 use render::RenderSystem;
 use resources::{Assets, DeltaTime, Input, Map, Turn, TurnState};
 use two;
@@ -17,6 +17,8 @@ pub struct Game {
     world: World,
     cursor_movement_system: CursorMovementSystem,
     player_select_system: PlayerSelectSystem,
+    action_menu_system: ActionMenuSystem,
+    run_select_system: RunSelectSystem,
 }
 
 impl Game {
@@ -49,7 +51,9 @@ impl Game {
         world.add_resource(Input::default());
         world.add_resource(Map { map: map });
 
-        world.add_resource(Turn { state: TurnState::SelectPlayer });
+        world.add_resource(Turn {
+            state: TurnState::SelectPlayer,
+        });
 
         // Create cursor
         world
@@ -96,11 +100,15 @@ impl Game {
 
         let cursor_movement_system = CursorMovementSystem;
         let player_select_system = PlayerSelectSystem;
+        let action_menu_system = ActionMenuSystem;
+        let run_select_system = RunSelectSystem;
 
         Self {
             world: world,
             cursor_movement_system: cursor_movement_system,
             player_select_system: player_select_system,
+            action_menu_system: action_menu_system,
+            run_select_system: run_select_system,
         }
     }
 
@@ -138,6 +146,12 @@ impl Game {
                     ElementState::Released => false,
                 };
             }
+            Some(VirtualKeyCode::Escape) => {
+                input.cancel = match event.state {
+                    ElementState::Pressed => true,
+                    ElementState::Released => false,
+                };
+            }
             _ => {}
         }
     }
@@ -146,15 +160,21 @@ impl Game {
         self.world.write_resource::<DeltaTime>().dt = dt;
 
         let state = self.world.read_resource::<Turn>().state.clone();
+        println!("Turn state = {:?}", state);
         match state {
             TurnState::SelectPlayer => {
                 self.cursor_movement_system.run_now(&self.world.res);
                 self.player_select_system.run_now(&self.world.res);
             }
-            _ => {
+            TurnState::ActionMenu { player } => {
+                self.action_menu_system.run_now(&self.world.res);
             }
+            TurnState::SelectRun { player } => {
+                self.cursor_movement_system.run_now(&self.world.res);
+                self.run_select_system.run_now(&self.world.res);
+            }
+            _ => {}
         }
-
     }
 
     pub fn render<F, R, C>(

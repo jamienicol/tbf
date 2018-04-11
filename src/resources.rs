@@ -71,13 +71,13 @@ pub struct Map {
     pub map: tiled::Map,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum TurnState {
     SelectPlayer,
     ActionMenu { player: Entity },
-    SelectRunDest { player: Entity },
+    SelectRun { player: Entity },
     Running { player: Entity, dest: Point2<f32> },
-    SelectPassDest { player: Entity },
+    SelectPass { player: Entity },
     Passing { player: Entity, dest: Point2<f32> },
 }
 

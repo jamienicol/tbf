@@ -27,7 +27,10 @@ pub enum Direction {
 #[derive(Debug, PartialEq)]
 pub enum CursorState {
     Still,
-    Moving { velocity: Vector2<f32>, target: Point2<f32> },
+    Moving {
+        velocity: Vector2<f32>,
+        target: Point2<f32>,
+    },
 }
 
 #[derive(Component, Debug)]

@@ -74,10 +74,8 @@ impl<'a> System<'a> for CursorMovementSystem {
                     let remaining_dt_x = remaining_dt.min(required_dt_x);
                     let remaining_dt_y = remaining_dt.min(required_dt_y);
 
-                    position.pos += Vector2::new(
-                        velocity.x * remaining_dt_x,
-                        velocity.y * remaining_dt_y,
-                    );
+                    position.pos +=
+                        Vector2::new(velocity.x * remaining_dt_x, velocity.y * remaining_dt_y);
                     remaining_dt -= remaining_dt_x.max(remaining_dt_y);
 
                     if position.pos == target {
@@ -111,6 +109,53 @@ impl<'a> System<'a> for PlayerSelectSystem {
                         turn.state = TurnState::ActionMenu { player: entity };
                         break;
                     }
+                }
+            }
+        }
+    }
+}
+
+pub struct ActionMenuSystem;
+
+impl<'a> System<'a> for ActionMenuSystem {
+    type SystemData = (Fetch<'a, Input>, FetchMut<'a, Turn>);
+
+    fn run(&mut self, data: Self::SystemData) {
+        let (input, mut turn) = data;
+
+        if let TurnState::ActionMenu { player } = turn.state {
+            // TODO: show an actual menu
+            if input.select {
+                turn.state = TurnState::SelectRun { player };
+            } else if input.cancel {
+                turn.state = TurnState::SelectPlayer;
+            }
+        }
+    }
+}
+
+pub struct RunSelectSystem;
+
+impl<'a> System<'a> for RunSelectSystem {
+    type SystemData = (
+        Entities<'a>,
+        Fetch<'a, Input>,
+        FetchMut<'a, Turn>,
+        ReadStorage<'a, Cursor>,
+        ReadStorage<'a, Position>,
+        ReadStorage<'a, Player>,
+    );
+
+    fn run(&mut self, data: Self::SystemData) {
+        let (entities, input, mut turn, cursors, positions, players) = data;
+
+        if let TurnState::SelectRun { player } = turn.state {
+            for (cursor, cursor_pos) in (&cursors, &positions).join() {
+                if input.select {
+                    turn.state = TurnState::Running {
+                        player: player,
+                        dest: cursor_pos.pos,
+                    };
                 }
             }
         }
