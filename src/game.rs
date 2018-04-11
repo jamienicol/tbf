@@ -166,7 +166,6 @@ impl Game {
         self.world.write_resource::<DeltaTime>().dt = dt;
 
         let state = self.world.read_resource::<Turn>().state.clone();
-        println!("Turn state = {:?}", state);
         match state {
             TurnState::SelectPlayer => {
                 self.cursor_movement_system.run_now(&self.world.res);
@@ -181,6 +180,11 @@ impl Game {
             }
             _ => {}
         }
+
+        // Reset input states which must be pressed each time rather than held
+        let mut input = self.world.write_resource::<Input>();
+        input.select = false;
+        input.cancel = false;
     }
 
     pub fn render<F, R, C>(

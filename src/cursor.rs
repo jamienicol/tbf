@@ -152,10 +152,14 @@ impl<'a> System<'a> for RunSelectSystem {
         if let TurnState::SelectRun { player } = turn.state {
             for (cursor, cursor_pos) in (&cursors, &positions).join() {
                 if input.select {
-                    turn.state = TurnState::Running {
-                        player: player,
-                        dest: cursor_pos.pos,
-                    };
+                    if cursor.state == CursorState::Still {
+                        turn.state = TurnState::Running {
+                            player: player,
+                            dest: cursor_pos.pos,
+                        };
+                    }
+                } else if input.cancel {
+                    turn.state = TurnState::SelectPlayer;
                 }
             }
         }
