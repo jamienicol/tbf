@@ -112,6 +112,12 @@ impl Game {
         }
     }
 
+    pub fn on_focused_event(&mut self, focused: bool) {
+        if focused == false {
+            *self.world.write_resource::<Input>() = Input::default();
+        }
+    }
+
     pub fn on_keyboard_event(&mut self, event: &KeyboardInput) {
         let mut input = self.world.write_resource::<Input>();
 

@@ -58,6 +58,9 @@ fn main() {
                     WindowEvent::KeyboardInput { input, .. } => {
                         game.on_keyboard_event(&input);
                     }
+                    WindowEvent::Focused(focused) => {
+                        game.on_focused_event(focused);
+                    }
                     _ => (),
                 }
             }
