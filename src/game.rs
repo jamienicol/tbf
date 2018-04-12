@@ -1,8 +1,9 @@
 use std::path::Path;
 
 use cgmath::Point2;
+use conrod::{self, Colorable, Positionable, Widget};
 use gfx;
-use gfx::handle::RenderTargetView;
+use gfx::handle::{RenderTargetView, ShaderResourceView};
 use glutin::{ElementState, KeyboardInput, VirtualKeyCode};
 use specs::{RunNow, World};
 use tiled;
@@ -13,20 +14,31 @@ use render::RenderSystem;
 use resources::{Assets, DeltaTime, Input, Map, Turn, TurnState};
 use two;
 
-pub struct Game {
+widget_ids!(struct WidgetIds { turn_state });
+
+pub struct Game<R>
+where
+    R: gfx::Resources,
+{
     world: World,
     cursor_movement_system: CursorMovementSystem,
     player_select_system: PlayerSelectSystem,
     action_menu_system: ActionMenuSystem,
     run_select_system: RunSelectSystem,
     player_movement_system: PlayerMovementSystem,
+
+    ui: conrod::Ui,
+    widget_ids: WidgetIds,
+    ui_image_map: conrod::image::Map<(ShaderResourceView<R, [f32; 4]>, (u32, u32))>,
 }
 
-impl Game {
-    pub fn new<F, R>(factory: &mut F) -> Self
+impl<R> Game<R>
+where
+    R: gfx::Resources,
+{
+    pub fn new<F>(factory: &mut F) -> Self
     where
         F: gfx::Factory<R>,
-        R: gfx::Resources,
     {
         let mut world = World::new();
         world.register::<Player>();
@@ -99,6 +111,14 @@ impl Game {
             .with(Sprite { image_id: "player" })
             .build();
 
+        let mut ui = conrod::UiBuilder::new([1280.0, 800.0]).build();
+        let widget_ids = WidgetIds::new(ui.widget_id_generator());
+        let ui_image_map = conrod::image::Map::new();
+
+        const FONT_PATH: &'static str =
+            concat!(env!("CARGO_MANIFEST_DIR"), "/resources/DejaVuSans.ttf");
+        ui.fonts.insert_from_file(FONT_PATH).unwrap();
+
         Self {
             world,
             cursor_movement_system: CursorMovementSystem,
@@ -106,6 +126,10 @@ impl Game {
             action_menu_system: ActionMenuSystem,
             run_select_system: RunSelectSystem,
             player_movement_system: PlayerMovementSystem,
+
+            ui,
+            widget_ids,
+            ui_image_map,
         }
     }
 
@@ -180,24 +204,38 @@ impl Game {
             }
         }
 
+        // Set UI state
+        let ui = &mut self.ui.set_widgets();
+        conrod::widget::Text::new(&format!("{:?}", state))
+            .top_left_with_margin_on(ui.window, 8.0)
+            .color(conrod::color::WHITE)
+            .font_size(16)
+            .set(self.widget_ids.turn_state, ui);
+
         // Reset input states which must be pressed each time rather than held
         let mut input = self.world.write_resource::<Input>();
         input.select = false;
         input.cancel = false;
     }
 
-    pub fn render<F, R, C>(
+    pub fn render<F, C>(
         &mut self,
         factory: &mut F,
         encoder: &mut gfx::Encoder<R, C>,
         out: &RenderTargetView<R, two::ColorFormat>,
-        renderer: &two::Renderer<R>,
+        sprite_renderer: &two::Renderer<R>,
+        ui_renderer: &mut conrod::backend::gfx::Renderer<R>,
     ) where
         F: gfx::Factory<R>,
-        R: gfx::Resources,
         C: gfx::CommandBuffer<R>,
     {
-        let mut rs = RenderSystem::new(factory, encoder, out, renderer);
-        rs.run_now(&self.world.res);
+        {
+            let mut rs = RenderSystem::new(factory, encoder, out, sprite_renderer);
+            rs.run_now(&self.world.res);
+        }
+
+        let primitives = self.ui.draw();
+        ui_renderer.fill(encoder, (1280.0, 800.0), primitives, &self.ui_image_map);
+        ui_renderer.draw(factory, encoder, &self.ui_image_map);
     }
 }

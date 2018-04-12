@@ -1,5 +1,7 @@
 extern crate cgmath;
 #[macro_use]
+extern crate conrod;
+#[macro_use]
 extern crate gfx;
 extern crate gfx_window_glutin;
 extern crate glutin;
@@ -38,7 +40,8 @@ fn main() {
 
     let mut encoder: gfx::Encoder<_, _> = factory.create_command_buffer().into();
 
-    let renderer = two::Renderer::new(&mut factory);
+    let sprite_renderer = two::Renderer::new(&mut factory);
+    let mut ui_renderer = conrod::backend::gfx::Renderer::new(&mut factory, &rtv, window.hidpi_factor() as f64).unwrap();
 
     let mut game = Game::new(&mut factory);
 
@@ -80,7 +83,13 @@ fn main() {
 
         encoder.clear(&rtv, [1.0, 0.0, 0.0, 1.0]);
 
-        game.render(&mut factory, &mut encoder, &rtv, &renderer);
+        game.render(
+            &mut factory,
+            &mut encoder,
+            &rtv,
+            &sprite_renderer,
+            &mut ui_renderer,
+        );
 
         encoder.flush(&mut device);
         window.swap_buffers().unwrap();

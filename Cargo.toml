@@ -12,3 +12,7 @@ gfx = "0.17"
 gfx_window_glutin = "0.21"
 glutin = "0.13"
 image = "0.18"
+
+[dependencies.conrod]
+version = "0.58"
+features = ["gfx_rs"]
