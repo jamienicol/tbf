@@ -22,7 +22,7 @@ fn get_input(input: &Input) -> Option<Direction> {
 }
 
 fn vector_from_direction(direction: &Direction) -> Vector2<f32> {
-    match direction {
+    match *direction {
         Direction::Left => Vector2::new(-1.0, 0.0),
         Direction::Up => Vector2::new(0.0, -1.0),
         Direction::Right => Vector2::new(1.0, 0.0),
