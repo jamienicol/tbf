@@ -77,8 +77,8 @@ pub enum TurnState {
     ActionMenu { player: Entity },
     SelectRun { player: Entity },
     Running { player: Entity, dest: Point2<f32> },
-    SelectPass { player: Entity },
-    Passing { player: Entity, dest: Point2<f32> },
+    // SelectPass { player: Entity },
+    // Passing { player: Entity, dest: Point2<f32> },
 }
 
 pub struct Turn {

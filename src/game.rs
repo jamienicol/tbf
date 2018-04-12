@@ -8,7 +8,7 @@ use specs::{RunNow, World};
 use tiled;
 
 use components::{Cursor, CursorState, Player, PlayerState, Position, Size, Sprite};
-use cursor::{ActionMenuSystem, CursorMovementSystem, PlayerSelectSystem, RunSelectSystem, PlayerMovementSystem};
+use systems::{ActionMenuSystem, CursorMovementSystem, PlayerSelectSystem, RunSelectSystem, PlayerMovementSystem};
 use render::RenderSystem;
 use resources::{Assets, DeltaTime, Input, Map, Turn, TurnState};
 use two;
@@ -178,7 +178,6 @@ impl Game {
             TurnState::Running { .. } => {
                 self.player_movement_system.run_now(&self.world.res);
             }
-            _ => {}
         }
 
         // Reset input states which must be pressed each time rather than held

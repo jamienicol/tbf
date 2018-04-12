@@ -82,7 +82,7 @@ pub struct Sprite {
 }
 
 impl Sprite {
-    pub fn new<F, R>(factory: &mut F) -> Self
+    pub fn new<F, R>(_factory: &mut F) -> Self
     where
         F: gfx::Factory<R>,
         R: gfx::Resources,

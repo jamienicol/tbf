@@ -10,10 +10,10 @@ extern crate specs_derive;
 extern crate tiled;
 
 mod components;
-mod cursor;
 mod game;
 mod render;
 mod resources;
+mod systems;
 mod two;
 
 use std::time;
