@@ -1,8 +1,11 @@
-use cgmath::Vector2;
+use cgmath::{InnerSpace, Vector2};
 use specs::{Entities, Fetch, FetchMut, Join, ReadStorage, System, WriteStorage};
 
 use components::{Cursor, CursorState, Direction, Player, PlayerState, Position};
 use resources::{DeltaTime, Input, Turn, TurnState};
+
+const CURSOR_SPEED: f32 = 320.0;
+const PLAYER_SPEED: f32 = 640.0;
 
 fn get_input(input: &Input) -> Option<Direction> {
     if input.left && !input.right {
@@ -48,15 +51,13 @@ impl<'a> System<'a> for CursorMovementSystem {
     fn run(&mut self, data: Self::SystemData) {
         let (dt, input, mut cursors, mut positions) = data;
 
-        let speed = 320.0;
-
         for (cursor, position) in (&mut cursors, &mut positions).join() {
             let mut remaining_dt = dt.dt;
 
             while remaining_dt > 0.0 {
                 if cursor.state == CursorState::Still {
                     if let Some(direction) = get_input(&input) {
-                        let velocity = vector_from_direction(&direction) * speed;
+                        let velocity = vector_from_direction(&direction) * CURSOR_SPEED;
                         let target = position.pos + vector_from_direction(&direction) * 64.0;
 
                         cursor.state = CursorState::Moving { velocity, target };
@@ -163,7 +164,7 @@ impl<'a> System<'a> for RunSelectSystem {
                             dest: cursor_pos.pos,
                         };
                         player.state = PlayerState::Running {
-                            velocity: (cursor_pos.pos - player_pos.pos) / 0.5,
+                            velocity: (cursor_pos.pos - player_pos.pos).normalize_to(PLAYER_SPEED),
                             target: cursor_pos.pos,
                         }
                     }
