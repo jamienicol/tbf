@@ -158,7 +158,7 @@ impl<'a> System<'a> for RunSelectSystem {
 
             for (cursor, cursor_pos) in (&cursors, &positions).join() {
                 if input.select {
-                    if cursor.state == CursorState::Still {
+                    if cursor.state == CursorState::Still && cursor_pos.pos != player_pos.pos {
                         turn.state = TurnState::Running {
                             player: player_ent,
                             dest: cursor_pos.pos,
