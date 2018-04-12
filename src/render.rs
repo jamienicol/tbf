@@ -32,10 +32,10 @@ where
         renderer: &'a two::Renderer<R>,
     ) -> Self {
         Self {
-            factory: factory,
-            encoder: encoder,
-            out: out,
-            renderer: renderer,
+            factory,
+            encoder,
+            out,
+            renderer,
         }
     }
 }

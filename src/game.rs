@@ -50,7 +50,7 @@ impl Game {
         world.add_resource(DeltaTime { dt: 0.0 });
         world.add_resource(assets);
         world.add_resource(Input::default());
-        world.add_resource(Map { map: map });
+        world.add_resource(Map { map });
 
         world.add_resource(Turn {
             state: TurnState::SelectPlayer,
@@ -100,7 +100,7 @@ impl Game {
             .build();
 
         Self {
-            world: world,
+            world,
             cursor_movement_system: CursorMovementSystem,
             player_select_system: PlayerSelectSystem,
             action_menu_system: ActionMenuSystem,
@@ -110,7 +110,7 @@ impl Game {
     }
 
     pub fn on_focused_event(&mut self, focused: bool) {
-        if focused == false {
+        if !focused {
             *self.world.write_resource::<Input>() = Input::default();
         }
     }

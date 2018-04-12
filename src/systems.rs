@@ -6,25 +6,25 @@ use resources::{DeltaTime, Input, Turn, TurnState};
 
 fn get_input(input: &Input) -> Option<Direction> {
     if input.left && !input.right {
-        return Some(Direction::Left);
+        Some(Direction::Left)
     } else if input.up && !input.down {
-        return Some(Direction::Up);
+        Some(Direction::Up)
     } else if input.right && !input.left {
-        return Some(Direction::Right);
+        Some(Direction::Right)
     } else if input.down && !input.up {
-        return Some(Direction::Down);
+        Some(Direction::Down)
     } else {
-        return None;
+        None
     }
 }
 
-fn vector_from_direction(direction: Direction) -> Vector2<f32> {
-    return match direction {
+fn vector_from_direction(direction: &Direction) -> Vector2<f32> {
+    match direction {
         Direction::Left => Vector2::new(-1.0, 0.0),
         Direction::Up => Vector2::new(0.0, -1.0),
         Direction::Right => Vector2::new(1.0, 0.0),
         Direction::Down => Vector2::new(0.0, 1.0),
-    };
+    }
 }
 
 fn required_time(displacement: f32, velocity: f32) -> f32 {
@@ -56,8 +56,8 @@ impl<'a> System<'a> for CursorMovementSystem {
             while remaining_dt > 0.0 {
                 if cursor.state == CursorState::Still {
                     if let Some(direction) = get_input(&input) {
-                        let velocity = vector_from_direction(direction.clone()) * speed;
-                        let target = position.pos + vector_from_direction(direction.clone()) * 64.0;
+                        let velocity = vector_from_direction(&direction) * speed;
+                        let target = position.pos + vector_from_direction(&direction) * 64.0;
 
                         cursor.state = CursorState::Moving { velocity, target };
                     } else {

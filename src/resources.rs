@@ -22,9 +22,7 @@ where
     R: gfx::Resources,
 {
     pub fn new() -> Self {
-        let images = HashMap::new();
-
-        Self { images: images }
+        Self { images: HashMap::new() }
     }
 
     pub fn load_image<F>(&mut self, factory: &mut F, path: &str, name: String)

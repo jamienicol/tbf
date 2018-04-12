@@ -70,8 +70,8 @@ where
 
         Self {
             _texture: texture,
-            view: view,
-            sampler: sampler,
+            view,
+            sampler,
         }
     }
 }
@@ -145,7 +145,7 @@ where
             )
             .unwrap();
 
-        Renderer { pso: pso }
+        Renderer { pso }
     }
 
     pub fn render_sprite<F, C>(
@@ -219,7 +219,7 @@ where
         };
 
         let data = pipe::Data {
-            vbuf: vbuf,
+            vbuf,
             texture: (texture.view.clone(), texture.sampler.clone()),
             proj: cgmath::ortho(0.0, 1280.0, 768.0, 0.0, 1.0, 0.0).into(),
             out: out.clone(),
@@ -300,7 +300,7 @@ where
         };
 
         let data = pipe::Data {
-            vbuf: vbuf,
+            vbuf,
             texture: (texture.view.clone(), texture.sampler.clone()),
             proj: cgmath::ortho(0.0, 1280.0, 768.0, 0.0, 1.0, 0.0).into(),
             out: out.clone(),

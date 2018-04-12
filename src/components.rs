@@ -16,7 +16,7 @@ pub struct Sprite {
     pub image_id: &'static str,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum Direction {
     Left,
     Up,
