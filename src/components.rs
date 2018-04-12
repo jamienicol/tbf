@@ -38,5 +38,15 @@ pub struct Cursor {
     pub state: CursorState,
 }
 
+pub enum PlayerState {
+    Still,
+    Running {
+        velocity: Vector2<f32>,
+        target: Point2<f32>
+    },
+}
+
 #[derive(Component)]
-pub struct Player;
+pub struct Player {
+    pub state: PlayerState,
+}

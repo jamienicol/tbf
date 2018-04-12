@@ -1,10 +1,8 @@
 use cgmath::Vector2;
 use specs::{Entities, Fetch, FetchMut, Join, ReadStorage, System, WriteStorage};
 
-use components::{Cursor, CursorState, Direction, Player, Position};
+use components::{Cursor, CursorState, Direction, Player, PlayerState, Position};
 use resources::{DeltaTime, Input, Turn, TurnState};
-
-pub struct CursorMovementSystem;
 
 fn get_input(input: &Input) -> Option<Direction> {
     if input.left && !input.right {
@@ -36,6 +34,8 @@ fn required_time(displacement: f32, velocity: f32) -> f32 {
         0.0
     }
 }
+
+pub struct CursorMovementSystem;
 
 impl<'a> System<'a> for CursorMovementSystem {
     type SystemData = (
@@ -102,9 +102,9 @@ impl<'a> System<'a> for PlayerSelectSystem {
     fn run(&mut self, data: Self::SystemData) {
         let (entities, input, mut turn, cursors, positions, players) = data;
 
-        for (cursor, cursor_pos) in (&cursors, &positions).join() {
+        for (_, cursor_pos) in (&cursors, &positions).join() {
             if input.select {
-                for (entity, player, player_pos) in (&*entities, &players, &positions).join() {
+                for (entity, _, player_pos) in (&*entities, &players, &positions).join() {
                     if player_pos.pos == cursor_pos.pos {
                         turn.state = TurnState::ActionMenu { player: entity };
                         break;
@@ -143,22 +143,66 @@ impl<'a> System<'a> for RunSelectSystem {
         FetchMut<'a, Turn>,
         ReadStorage<'a, Cursor>,
         ReadStorage<'a, Position>,
-        ReadStorage<'a, Player>,
+        WriteStorage<'a, Player>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
-        let (entities, input, mut turn, cursors, positions, players) = data;
+        let (entities, input, mut turn, cursors, positions, mut players) = data;
 
-        if let TurnState::SelectRun { player } = turn.state {
+        if let TurnState::SelectRun { player: player_ent } = turn.state {
+
+            // Find the player
+            let (_, player, player_pos) = (&*entities, &mut players, &positions).join()
+                .find(|&(ref entity, _, _)| entity == &player_ent).unwrap();
+
             for (cursor, cursor_pos) in (&cursors, &positions).join() {
                 if input.select {
                     if cursor.state == CursorState::Still {
                         turn.state = TurnState::Running {
-                            player: player,
+                            player: player_ent,
                             dest: cursor_pos.pos,
                         };
+                        player.state = PlayerState::Running {
+                            velocity: (cursor_pos.pos - player_pos.pos) / 0.5,
+                            target: cursor_pos.pos,
+                        }
                     }
                 } else if input.cancel {
+                    turn.state = TurnState::SelectPlayer;
+                }
+            }
+        }
+    }
+}
+
+pub struct PlayerMovementSystem;
+
+impl<'a> System<'a> for PlayerMovementSystem {
+    type SystemData = (
+        Fetch<'a, DeltaTime>,
+        FetchMut<'a, Turn>,
+        WriteStorage<'a, Player>,
+        WriteStorage<'a, Position>,
+    );
+
+    fn run(&mut self, data: Self::SystemData) {
+        let (dt, mut turn, mut players, mut positions) = data;
+
+        for (player, position) in (&mut players, &mut positions).join() {
+
+            if let PlayerState::Running { velocity, target } = player.state {
+                let disp = target - position.pos;
+                let required_dt_x = required_time(disp.x, velocity.x);
+                let required_dt_y = required_time(disp.y, velocity.y);
+
+                let remaining_dt_x = dt.dt.min(required_dt_x);
+                let remaining_dt_y = dt.dt.min(required_dt_y);
+
+                position.pos +=
+                    Vector2::new(velocity.x * remaining_dt_x, velocity.y * remaining_dt_y);
+
+                if position.pos == target {
+                    player.state = PlayerState::Still;
                     turn.state = TurnState::SelectPlayer;
                 }
             }

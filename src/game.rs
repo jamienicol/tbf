@@ -7,8 +7,8 @@ use glutin::{ElementState, KeyboardInput, VirtualKeyCode};
 use specs::{RunNow, World};
 use tiled;
 
-use components::{Cursor, CursorState, Player, Position, Size, Sprite};
-use cursor::{ActionMenuSystem, CursorMovementSystem, PlayerSelectSystem, RunSelectSystem};
+use components::{Cursor, CursorState, Player, PlayerState, Position, Size, Sprite};
+use cursor::{ActionMenuSystem, CursorMovementSystem, PlayerSelectSystem, RunSelectSystem, PlayerMovementSystem};
 use render::RenderSystem;
 use resources::{Assets, DeltaTime, Input, Map, Turn, TurnState};
 use two;
@@ -19,6 +19,7 @@ pub struct Game {
     player_select_system: PlayerSelectSystem,
     action_menu_system: ActionMenuSystem,
     run_select_system: RunSelectSystem,
+    player_movement_system: PlayerMovementSystem,
 }
 
 impl Game {
@@ -74,7 +75,7 @@ impl Game {
         // Create players
         world
             .create_entity()
-            .with(Player {})
+            .with(Player { state: PlayerState::Still })
             .with(Position {
                 pos: Point2::new(128.0, 128.0),
             })
@@ -87,7 +88,7 @@ impl Game {
 
         world
             .create_entity()
-            .with(Player {})
+            .with(Player { state: PlayerState::Still })
             .with(Position {
                 pos: Point2::new(256.0, 256.0),
             })
@@ -98,17 +99,13 @@ impl Game {
             .with(Sprite { image_id: "player" })
             .build();
 
-        let cursor_movement_system = CursorMovementSystem;
-        let player_select_system = PlayerSelectSystem;
-        let action_menu_system = ActionMenuSystem;
-        let run_select_system = RunSelectSystem;
-
         Self {
             world: world,
-            cursor_movement_system: cursor_movement_system,
-            player_select_system: player_select_system,
-            action_menu_system: action_menu_system,
-            run_select_system: run_select_system,
+            cursor_movement_system: CursorMovementSystem,
+            player_select_system: PlayerSelectSystem,
+            action_menu_system: ActionMenuSystem,
+            run_select_system: RunSelectSystem,
+            player_movement_system: PlayerMovementSystem,
         }
     }
 
@@ -171,12 +168,15 @@ impl Game {
                 self.cursor_movement_system.run_now(&self.world.res);
                 self.player_select_system.run_now(&self.world.res);
             }
-            TurnState::ActionMenu { player } => {
+            TurnState::ActionMenu { .. } => {
                 self.action_menu_system.run_now(&self.world.res);
             }
-            TurnState::SelectRun { player } => {
+            TurnState::SelectRun { .. } => {
                 self.cursor_movement_system.run_now(&self.world.res);
                 self.run_select_system.run_now(&self.world.res);
+            }
+            TurnState::Running { .. } => {
+                self.player_movement_system.run_now(&self.world.res);
             }
             _ => {}
         }
