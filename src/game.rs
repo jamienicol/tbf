@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use cgmath::Point2;
-use conrod::{self, Colorable, Positionable, Widget};
+use conrod::{self, Colorable, Labelable, Positionable, Sizeable, Widget};
 use gfx;
 use gfx::handle::{RenderTargetView, ShaderResourceView};
 use glutin::{ElementState, KeyboardInput, VirtualKeyCode};
@@ -14,7 +14,12 @@ use render::RenderSystem;
 use resources::{Assets, DeltaTime, Input, Map, Turn, TurnState};
 use two;
 
-widget_ids!(struct WidgetIds { turn_state });
+widget_ids!(struct WidgetIds {
+    turn_state,
+    action_menu_run,
+    action_menu_pass,
+    action_menu_cancel,
+});
 
 pub struct Game<R>
 where
@@ -186,6 +191,8 @@ where
     pub fn update(&mut self, dt: f32) {
         self.world.write_resource::<DeltaTime>().dt = dt;
 
+        let ui = &mut self.ui.set_widgets();
+
         let state = self.world.read_resource::<Turn>().state.clone();
         match state {
             TurnState::SelectPlayer => {
@@ -193,6 +200,22 @@ where
                 self.player_select_system.run_now(&self.world.res);
             }
             TurnState::ActionMenu { .. } => {
+                conrod::widget::Button::new()
+                    .label("Run")
+                    .top_right_with_margin_on(ui.window, 32.0)
+                    .w_h(320.0, 48.0)
+                    .set(self.widget_ids.action_menu_run, ui);
+                conrod::widget::Button::new()
+                    .label("Pass")
+                    .down_from(self.widget_ids.action_menu_run, 32.0)
+                    .w_h(320.0, 48.0)
+                    .set(self.widget_ids.action_menu_pass, ui);
+                conrod::widget::Button::new()
+                    .label("Cancel")
+                    .down_from(self.widget_ids.action_menu_pass, 32.0)
+                    .w_h(320.0, 48.0)
+                    .set(self.widget_ids.action_menu_cancel, ui);
+
                 self.action_menu_system.run_now(&self.world.res);
             }
             TurnState::SelectRun { .. } => {
@@ -204,8 +227,7 @@ where
             }
         }
 
-        // Set UI state
-        let ui = &mut self.ui.set_widgets();
+        // Display game state in top left
         conrod::widget::Text::new(&format!("{:?}", state))
             .top_left_with_margin_on(ui.window, 8.0)
             .color(conrod::color::WHITE)
