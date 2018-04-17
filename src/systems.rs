@@ -119,19 +119,9 @@ impl<'a> System<'a> for PlayerSelectSystem {
 pub struct ActionMenuSystem;
 
 impl<'a> System<'a> for ActionMenuSystem {
-    type SystemData = (Fetch<'a, Input>, FetchMut<'a, Turn>);
+    type SystemData = ();
 
-    fn run(&mut self, data: Self::SystemData) {
-        let (input, mut turn) = data;
-
-        if let TurnState::ActionMenu { player } = turn.state {
-            // TODO: show an actual menu
-            if input.select {
-                turn.state = TurnState::SelectRun { player };
-            } else if input.cancel {
-                turn.state = TurnState::SelectPlayer;
-            }
-        }
+    fn run(&mut self, _data: Self::SystemData) {
     }
 }
 

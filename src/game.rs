@@ -199,6 +199,10 @@ where
         }
     }
 
+    pub fn on_ui_input(&mut self, input: conrod::event::Input) {
+        self.ui.handle_event(input);
+    }
+
     pub fn update(&mut self, dt: f32) {
         self.world.write_resource::<DeltaTime>().dt = dt;
 
@@ -210,22 +214,30 @@ where
                 self.cursor_movement_system.run_now(&self.world.res);
                 self.player_select_system.run_now(&self.world.res);
             }
-            TurnState::ActionMenu { .. } => {
-                conrod::widget::Button::new()
+            TurnState::ActionMenu { player } => {
+                if conrod::widget::Button::new()
                     .label("Run")
                     .top_right_with_margin_on(ui.window, 16.0)
                     .w_h(160.0, 32.0)
-                    .set(self.widget_ids.action_menu_run, ui);
+                    .set(self.widget_ids.action_menu_run, ui)
+                    .was_clicked()
+                {
+                    self.world.write_resource::<Turn>().state = TurnState::SelectRun { player };
+                }
                 conrod::widget::Button::new()
                     .label("Pass")
                     .down_from(self.widget_ids.action_menu_run, 16.0)
                     .w_h(160.0, 32.0)
                     .set(self.widget_ids.action_menu_pass, ui);
-                conrod::widget::Button::new()
+                if conrod::widget::Button::new()
                     .label("Cancel")
                     .down_from(self.widget_ids.action_menu_pass, 16.0)
                     .w_h(160.0, 32.0)
-                    .set(self.widget_ids.action_menu_cancel, ui);
+                    .set(self.widget_ids.action_menu_cancel, ui)
+                    .was_clicked()
+                {
+                    self.world.write_resource::<Turn>().state = TurnState::SelectPlayer;
+                }
 
                 self.action_menu_system.run_now(&self.world.res);
             }

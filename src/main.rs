@@ -51,7 +51,7 @@ fn main() {
     let mut running = true;
     'main_loop: loop {
         events_loop.poll_events(|event| {
-            if let Event::WindowEvent { event, .. } = event {
+            if let Event::WindowEvent { event, .. } = event.clone() {
                 match event {
                     WindowEvent::Closed => {
                         running = false;
@@ -67,6 +67,10 @@ fn main() {
                     }
                     _ => (),
                 }
+            }
+
+            if let Some(input) = conrod::backend::winit::convert_event(event.clone(), window.window()) {
+                game.on_ui_input(input);
             }
         });
 

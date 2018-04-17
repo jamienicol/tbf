@@ -7,13 +7,13 @@ authors = ["Jamie Nicol <jamie@jamienicol.me>"]
 cgmath = "0.16"
 fps_counter = "1.0"
 gfx = "0.17"
-gfx_window_glutin = "0.21"
-glutin = "0.13"
+gfx_window_glutin = "0.22"
+glutin = "0.14"
 image = "0.18"
 specs = "0.10"
 specs-derive = "0.1"
 tiled = "0.7"
 
 [dependencies.conrod]
-version = "0.58"
-features = ["gfx_rs"]
+version = "0.59"
+features = ["gfx_rs", "winit"]
