@@ -1,4 +1,4 @@
-use cgmath::{InnerSpace, Vector2};
+use cgmath::{InnerSpace, Point2, Vector2};
 use specs::{Entities, Fetch, FetchMut, Join, ReadStorage, System, WriteStorage};
 
 use components::{Cursor, CursorState, Direction, Player, PlayerState, Position};
@@ -137,6 +137,34 @@ impl<'a> System<'a> for ActionMenuSystem {
 
 pub struct RunSelectSystem;
 
+fn calculate_run_targets(start: Point2<u32>, map_size: Vector2<u32>, max_distance: u32) -> Vec<Point2<u32>> {
+    let mut targets = Vec::new();
+
+    // TODO make this based on actual pathfinding rather than just manhattan distance
+    for x in 0..max_distance + 1 {
+        for y in 0..max_distance - x + 1 {
+            if start.x >= x {
+                if start.y >= y {
+                    targets.push(Point2::new(start.x - x, start.y - y));
+                }
+                if start.y < map_size.y - y {
+                    targets.push(Point2::new(start.x - x, start.y + y));
+                }
+            }
+            if start.x < map_size.x - x {
+                if start.y >= y {
+                    targets.push(Point2::new(start.x + x, start.y - y));
+                }
+                if start.y < map_size.y - y {
+                    targets.push(Point2::new(start.x + x, start.y + y));
+                }
+            }
+        }
+    }
+
+    return targets;
+}
+
 impl<'a> System<'a> for RunSelectSystem {
     type SystemData = (
         Entities<'a>,
@@ -151,21 +179,21 @@ impl<'a> System<'a> for RunSelectSystem {
     fn run(&mut self, data: Self::SystemData) {
         let (entities, input, mut turn, mut map, cursors, positions, mut players) = data;
 
-        map.highlights = vec![
-                                    (4, 1),
-                            (3, 2), (4, 2), (5, 2),
-                    (2, 3), (3, 3), (4, 3), (5, 3), (6, 3),
-            (1, 4), (2, 4), (3, 4), (4, 4), (5, 4), (6, 4), (7, 4),
-                    (2, 5), (3, 5), (4, 5), (5, 5), (6, 5),
-                            (3, 6), (4, 6), (5, 6),
-                                    (4, 7),
-        ];
-
         if let TurnState::SelectRun { player: player_ent } = turn.state {
 
             // Find the player
             let (_, player, player_pos) = (&*entities, &mut players, &positions).join()
                 .find(|&(ref entity, _, _)| entity == &player_ent).unwrap();
+
+            // Calculate highlighted tiles if required
+            if map.highlights.is_empty() {
+                let tile_pos = Point2::new(
+                    (player_pos.pos.x / 64.0) as u32,
+                    (player_pos.pos.y / 64.0) as u32,
+                );
+                let map_size = Vector2::new(map.map.width, map.map.height);
+                map.highlights = calculate_run_targets(tile_pos, map_size, 8);
+            }
 
             for (cursor, cursor_pos) in (&cursors, &positions).join() {
                 if input.select {

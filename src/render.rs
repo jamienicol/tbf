@@ -1,3 +1,4 @@
+use cgmath::Point2;
 use gfx;
 use gfx::handle::RenderTargetView;
 use specs::{Fetch, Join, ReadStorage, System};
@@ -115,7 +116,7 @@ where
                     };
                     sprite.src = two::Rect { x: 0.0, y: 0.0, width: 1.0, height: 1.0 };
 
-                    if map.highlights.contains(&(x, y)) {
+                    if map.highlights.contains(&Point2::new(x, y)) {
                         highlights_batch.sprites.push(sprite);
                     } else {
                         lowlights_batch.sprites.push(sprite);

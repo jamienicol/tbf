@@ -68,7 +68,7 @@ impl Default for Input {
 
 pub struct Map {
     pub map: tiled::Map,
-    pub highlights: Vec<(u32, u32)>,
+    pub highlights: Vec<Point2<u32>>,
 }
 
 #[derive(Debug, Clone)]
