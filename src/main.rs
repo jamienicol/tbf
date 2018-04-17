@@ -1,6 +1,7 @@
 extern crate cgmath;
 #[macro_use]
 extern crate conrod;
+extern crate fps_counter;
 #[macro_use]
 extern crate gfx;
 extern crate gfx_window_glutin;

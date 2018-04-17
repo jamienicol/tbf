@@ -2,6 +2,7 @@ use std::path::Path;
 
 use cgmath::Point2;
 use conrod::{self, Colorable, Labelable, Positionable, Sizeable, Widget};
+use fps_counter::FPSCounter;
 use gfx;
 use gfx::handle::{RenderTargetView, ShaderResourceView};
 use glutin::{ElementState, KeyboardInput, VirtualKeyCode};
@@ -15,6 +16,7 @@ use resources::{Assets, DeltaTime, Input, Map, Turn, TurnState};
 use two;
 
 widget_ids!(struct WidgetIds {
+    fps,
     turn_state,
     action_menu_run,
     action_menu_pass,
@@ -31,6 +33,8 @@ where
     action_menu_system: ActionMenuSystem,
     run_select_system: RunSelectSystem,
     player_movement_system: PlayerMovementSystem,
+
+    fps_counter: FPSCounter,
 
     ui: conrod::Ui,
     widget_ids: WidgetIds,
@@ -116,6 +120,8 @@ where
             .with(Sprite { image_id: "player" })
             .build();
 
+        let fps_counter = FPSCounter::new();
+
         let mut ui = conrod::UiBuilder::new([1280.0, 800.0]).build();
         let widget_ids = WidgetIds::new(ui.widget_id_generator());
         let ui_image_map = conrod::image::Map::new();
@@ -131,6 +137,8 @@ where
             action_menu_system: ActionMenuSystem,
             run_select_system: RunSelectSystem,
             player_movement_system: PlayerMovementSystem,
+
+            fps_counter,
 
             ui,
             widget_ids,
@@ -227,11 +235,19 @@ where
             }
         }
 
-        // Display game state in top left
-        conrod::widget::Text::new(&format!("{:?}", state))
+        // Display frames per second in top left
+        let fps = self.fps_counter.tick();
+        conrod::widget::Text::new(&format!("{} FPS", fps))
             .top_left_with_margin_on(ui.window, 8.0)
             .color(conrod::color::WHITE)
-            .font_size(16)
+            .font_size(12)
+            .set(self.widget_ids.fps, ui);
+
+        // Display game state in bottom left
+        conrod::widget::Text::new(&format!("{:?}", state))
+            .bottom_left_with_margin_on(ui.window, 8.0)
+            .color(conrod::color::WHITE)
+            .font_size(12)
             .set(self.widget_ids.turn_state, ui);
 
         // Reset input states which must be pressed each time rather than held
