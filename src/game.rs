@@ -210,18 +210,18 @@ where
             TurnState::ActionMenu { .. } => {
                 conrod::widget::Button::new()
                     .label("Run")
-                    .top_right_with_margin_on(ui.window, 32.0)
-                    .w_h(320.0, 48.0)
+                    .top_right_with_margin_on(ui.window, 16.0)
+                    .w_h(160.0, 32.0)
                     .set(self.widget_ids.action_menu_run, ui);
                 conrod::widget::Button::new()
                     .label("Pass")
-                    .down_from(self.widget_ids.action_menu_run, 32.0)
-                    .w_h(320.0, 48.0)
+                    .down_from(self.widget_ids.action_menu_run, 16.0)
+                    .w_h(160.0, 32.0)
                     .set(self.widget_ids.action_menu_pass, ui);
                 conrod::widget::Button::new()
                     .label("Cancel")
-                    .down_from(self.widget_ids.action_menu_pass, 32.0)
-                    .w_h(320.0, 48.0)
+                    .down_from(self.widget_ids.action_menu_pass, 16.0)
+                    .w_h(160.0, 32.0)
                     .set(self.widget_ids.action_menu_cancel, ui);
 
                 self.action_menu_system.run_now(&self.world.res);
