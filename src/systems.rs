@@ -2,7 +2,7 @@ use cgmath::{InnerSpace, Vector2};
 use specs::{Entities, Fetch, FetchMut, Join, ReadStorage, System, WriteStorage};
 
 use components::{Cursor, CursorState, Direction, Player, PlayerState, Position};
-use resources::{DeltaTime, Input, Turn, TurnState};
+use resources::{DeltaTime, Input, Map, Turn, TurnState};
 
 const CURSOR_SPEED: f32 = 320.0;
 const PLAYER_SPEED: f32 = 640.0;
@@ -142,13 +142,24 @@ impl<'a> System<'a> for RunSelectSystem {
         Entities<'a>,
         Fetch<'a, Input>,
         FetchMut<'a, Turn>,
+        FetchMut<'a, Map>,
         ReadStorage<'a, Cursor>,
         ReadStorage<'a, Position>,
         WriteStorage<'a, Player>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
-        let (entities, input, mut turn, cursors, positions, mut players) = data;
+        let (entities, input, mut turn, mut map, cursors, positions, mut players) = data;
+
+        map.highlights = vec![
+                                    (4, 1),
+                            (3, 2), (4, 2), (5, 2),
+                    (2, 3), (3, 3), (4, 3), (5, 3), (6, 3),
+            (1, 4), (2, 4), (3, 4), (4, 4), (5, 4), (6, 4), (7, 4),
+                    (2, 5), (3, 5), (4, 5), (5, 5), (6, 5),
+                            (3, 6), (4, 6), (5, 6),
+                                    (4, 7),
+        ];
 
         if let TurnState::SelectRun { player: player_ent } = turn.state {
 
@@ -159,6 +170,7 @@ impl<'a> System<'a> for RunSelectSystem {
             for (cursor, cursor_pos) in (&cursors, &positions).join() {
                 if input.select {
                     if cursor.state == CursorState::Still && cursor_pos.pos != player_pos.pos {
+                        map.highlights.clear();
                         turn.state = TurnState::Running {
                             player: player_ent,
                             dest: cursor_pos.pos,
@@ -169,6 +181,7 @@ impl<'a> System<'a> for RunSelectSystem {
                         }
                     }
                 } else if input.cancel {
+                    map.highlights.clear();
                     turn.state = TurnState::SelectPlayer;
                 }
             }

@@ -1,4 +1,5 @@
 use std::path::Path;
+use std::vec::Vec;
 
 use cgmath::Point2;
 use conrod::{self, Colorable, Labelable, Positionable, Sizeable, Widget};
@@ -60,6 +61,8 @@ where
 
         assets.load_image(factory, "cursor.png", "cursor".to_string());
         assets.load_image(factory, "player.png", "player".to_string());
+        assets.load_image(factory, "highlight.png", "highlight".to_string());
+        assets.load_image(factory, "lowlight.png", "lowlight".to_string());
 
         // Load map
         let map =
@@ -71,7 +74,7 @@ where
         world.add_resource(DeltaTime { dt: 0.0 });
         world.add_resource(assets);
         world.add_resource(Input::default());
-        world.add_resource(Map { map });
+        world.add_resource(Map { map, highlights: Vec::new() });
 
         world.add_resource(Turn {
             state: TurnState::SelectPlayer,

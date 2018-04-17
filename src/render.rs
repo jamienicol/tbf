@@ -99,6 +99,34 @@ where
             tileset_texture,
         );
 
+        // render highlights
+        if !map.highlights.is_empty() {
+            let mut highlights_batch = two::SpriteBatch::new();
+            let mut lowlights_batch = two::SpriteBatch::new();
+
+            for x in 0..map.map.width {
+                for y in 0..map.map.height {
+                    let mut sprite = two::Sprite::new(self.factory);
+                    sprite.dest = two::Rect {
+                        x: (x * map.map.tile_width) as f32,
+                        y: (y * map.map.tile_height) as f32,
+                        width: 64.0,
+                        height: 64.0
+                    };
+                    sprite.src = two::Rect { x: 0.0, y: 0.0, width: 1.0, height: 1.0 };
+
+                    if map.highlights.contains(&(x, y)) {
+                        highlights_batch.sprites.push(sprite);
+                    } else {
+                        lowlights_batch.sprites.push(sprite);
+                    }
+                }
+            }
+
+            self.renderer.render_spritebatch(self.factory, self.encoder, &self.out, &highlights_batch, &assets.images["highlight"]);
+            self.renderer.render_spritebatch(self.factory, self.encoder, &self.out, &lowlights_batch, &assets.images["lowlight"]);
+        }
+
         // render sprite components
         for (position, size, sprite) in (&positions, &sizes, &sprites).join() {
             let texture = &assets.images[sprite.image_id];

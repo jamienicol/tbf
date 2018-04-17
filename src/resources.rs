@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::default::Default;
 use std::path::PathBuf;
 use std::string::String;
+use std::vec::Vec;
 
 use cgmath::Point2;
 use gfx;
@@ -67,6 +68,7 @@ impl Default for Input {
 
 pub struct Map {
     pub map: tiled::Map,
+    pub highlights: Vec<(u32, u32)>,
 }
 
 #[derive(Debug, Clone)]
