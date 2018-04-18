@@ -2,7 +2,7 @@ use std::path::Path;
 use std::vec::Vec;
 
 use cgmath::Point2;
-use conrod::{self, Colorable, Labelable, Positionable, Sizeable, Widget};
+use conrod::{self, Colorable, Positionable, Widget};
 use fps_counter::FPSCounter;
 use gfx;
 use gfx::handle::{RenderTargetView, ShaderResourceView};
@@ -16,7 +16,7 @@ use render::RenderSystem;
 use resources::{Assets, DeltaTime, Input, Map, Turn, TurnState};
 use two;
 
-widget_ids!(struct WidgetIds {
+widget_ids!(pub struct WidgetIds {
     fps,
     turn_state,
     action_menu_run,
@@ -31,7 +31,6 @@ where
     world: World,
     cursor_movement_system: CursorMovementSystem,
     player_select_system: PlayerSelectSystem,
-    action_menu_system: ActionMenuSystem,
     run_select_system: RunSelectSystem,
     player_movement_system: PlayerMovementSystem,
 
@@ -137,7 +136,6 @@ where
             world,
             cursor_movement_system: CursorMovementSystem,
             player_select_system: PlayerSelectSystem,
-            action_menu_system: ActionMenuSystem,
             run_select_system: RunSelectSystem,
             player_movement_system: PlayerMovementSystem,
 
@@ -214,32 +212,9 @@ where
                 self.cursor_movement_system.run_now(&self.world.res);
                 self.player_select_system.run_now(&self.world.res);
             }
-            TurnState::ActionMenu { player } => {
-                if conrod::widget::Button::new()
-                    .label("Run")
-                    .top_right_with_margin_on(ui.window, 16.0)
-                    .w_h(160.0, 32.0)
-                    .set(self.widget_ids.action_menu_run, ui)
-                    .was_clicked()
-                {
-                    self.world.write_resource::<Turn>().state = TurnState::SelectRun { player };
-                }
-                conrod::widget::Button::new()
-                    .label("Pass")
-                    .down_from(self.widget_ids.action_menu_run, 16.0)
-                    .w_h(160.0, 32.0)
-                    .set(self.widget_ids.action_menu_pass, ui);
-                if conrod::widget::Button::new()
-                    .label("Cancel")
-                    .down_from(self.widget_ids.action_menu_pass, 16.0)
-                    .w_h(160.0, 32.0)
-                    .set(self.widget_ids.action_menu_cancel, ui)
-                    .was_clicked()
-                {
-                    self.world.write_resource::<Turn>().state = TurnState::SelectPlayer;
-                }
-
-                self.action_menu_system.run_now(&self.world.res);
+            TurnState::ActionMenu { .. } => {
+                let mut action_menu_system = ActionMenuSystem::new(ui, &self.widget_ids);
+                action_menu_system.run_now(&self.world.res);
             }
             TurnState::SelectRun { .. } => {
                 self.cursor_movement_system.run_now(&self.world.res);

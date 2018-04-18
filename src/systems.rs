@@ -1,7 +1,9 @@
 use cgmath::{InnerSpace, Point2, Vector2};
+use conrod::{self, Labelable, Positionable, Sizeable, Widget};
 use specs::{Entities, Fetch, FetchMut, Join, ReadStorage, System, WriteStorage};
 
 use components::{Cursor, CursorState, Direction, Player, PlayerState, Position};
+use game::WidgetIds;
 use resources::{DeltaTime, Input, Map, Turn, TurnState};
 
 const CURSOR_SPEED: f32 = 320.0;
@@ -116,12 +118,53 @@ impl<'a> System<'a> for PlayerSelectSystem {
     }
 }
 
-pub struct ActionMenuSystem;
+pub struct ActionMenuSystem<'a, 'b> where
+    'b: 'a,
+{
+    ui: &'a mut conrod::UiCell<'b>,
+    widget_ids: &'a WidgetIds,
+}
 
-impl<'a> System<'a> for ActionMenuSystem {
-    type SystemData = ();
+impl<'a, 'b> ActionMenuSystem<'a, 'b> {
+    pub fn new(ui: &'a mut conrod::UiCell<'b>, widget_ids: &'a WidgetIds) -> Self {
+        ActionMenuSystem {
+            ui,
+            widget_ids,
+        }
+    }
+}
 
-    fn run(&mut self, _data: Self::SystemData) {
+impl<'a, 'b, 'c> System<'c> for ActionMenuSystem<'a, 'b> {
+    type SystemData = FetchMut<'c, Turn>;
+
+    fn run(&mut self, data: Self::SystemData) {
+        let mut turn = data;
+
+        if let TurnState::ActionMenu { player } = turn.state {
+            if conrod::widget::Button::new()
+                .label("Run")
+                .top_right_with_margin_on(self.ui.window, 16.0)
+                .w_h(160.0, 32.0)
+                .set(self.widget_ids.action_menu_run, self.ui)
+                .was_clicked()
+            {
+                turn.state = TurnState::SelectRun { player };
+            }
+            conrod::widget::Button::new()
+                .label("Pass")
+                .down_from(self.widget_ids.action_menu_run, 16.0)
+                .w_h(160.0, 32.0)
+                .set(self.widget_ids.action_menu_pass, self.ui);
+            if conrod::widget::Button::new()
+                .label("Cancel")
+                .down_from(self.widget_ids.action_menu_pass, 16.0)
+                .w_h(160.0, 32.0)
+                .set(self.widget_ids.action_menu_cancel, self.ui)
+                .was_clicked()
+            {
+                turn.state = TurnState::SelectPlayer;
+            }
+        }
     }
 }
 
