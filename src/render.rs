@@ -3,7 +3,7 @@ use gfx;
 use gfx::handle::RenderTargetView;
 use specs::{Fetch, Join, ReadStorage, System};
 
-use components::{Position, Size, Sprite};
+use components::{CanMove, Position, Size, Sprite};
 use resources::{Assets, Map};
 
 use two;
@@ -50,13 +50,14 @@ where
     type SystemData = (
         Fetch<'b, Assets<R>>,
         Fetch<'b, Map>,
+        ReadStorage<'b, CanMove>,
         ReadStorage<'b, Position>,
         ReadStorage<'b, Size>,
         ReadStorage<'b, Sprite>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
-        let (assets, map, positions, sizes, sprites) = data;
+        let (assets, map, can_moves, positions, sizes, sprites) = data;
 
         // render map
         let tileset = &map.map.tilesets[0];
@@ -101,7 +102,7 @@ where
         );
 
         // render highlights
-        if !map.highlights.is_empty() {
+        for (can_move, _position) in (&can_moves, &positions).join() {
             let mut highlights_batch = two::SpriteBatch::new();
             let mut lowlights_batch = two::SpriteBatch::new();
 
@@ -112,11 +113,16 @@ where
                         x: (x * map.map.tile_width) as f32,
                         y: (y * map.map.tile_height) as f32,
                         width: 64.0,
-                        height: 64.0
+                        height: 64.0,
                     };
-                    sprite.src = two::Rect { x: 0.0, y: 0.0, width: 1.0, height: 1.0 };
+                    sprite.src = two::Rect {
+                        x: 0.0,
+                        y: 0.0,
+                        width: 1.0,
+                        height: 1.0,
+                    };
 
-                    if map.highlights.contains(&Point2::new(x, y)) {
+                    if can_move.dests.contains(&Point2::new(x, y)) {
                         highlights_batch.sprites.push(sprite);
                     } else {
                         lowlights_batch.sprites.push(sprite);
@@ -124,8 +130,20 @@ where
                 }
             }
 
-            self.renderer.render_spritebatch(self.factory, self.encoder, &self.out, &highlights_batch, &assets.images["highlight"]);
-            self.renderer.render_spritebatch(self.factory, self.encoder, &self.out, &lowlights_batch, &assets.images["lowlight"]);
+            self.renderer.render_spritebatch(
+                self.factory,
+                self.encoder,
+                &self.out,
+                &highlights_batch,
+                &assets.images["highlight"],
+            );
+            self.renderer.render_spritebatch(
+                self.factory,
+                self.encoder,
+                &self.out,
+                &lowlights_batch,
+                &assets.images["lowlight"],
+            );
         }
 
         // render sprite components

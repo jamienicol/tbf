@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::default::Default;
 use std::path::PathBuf;
 use std::string::String;
-use std::vec::Vec;
 
 use cgmath::Point2;
 use gfx;
@@ -23,7 +22,9 @@ where
     R: gfx::Resources,
 {
     pub fn new() -> Self {
-        Self { images: HashMap::new() }
+        Self {
+            images: HashMap::new(),
+        }
     }
 
     pub fn load_image<F>(&mut self, factory: &mut F, path: &str, name: String)
@@ -68,7 +69,6 @@ impl Default for Input {
 
 pub struct Map {
     pub map: tiled::Map,
-    pub highlights: Vec<Point2<u32>>,
 }
 
 #[derive(Debug, Clone)]

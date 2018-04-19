@@ -2,7 +2,7 @@ use cgmath::{InnerSpace, Point2, Vector2};
 use conrod::{self, Labelable, Positionable, Sizeable, Widget};
 use specs::{Entities, Fetch, FetchMut, Join, ReadStorage, System, WriteStorage};
 
-use components::{Cursor, CursorState, Direction, Player, PlayerState, Position};
+use components::{CanMove, Cursor, CursorState, Direction, Player, PlayerState, Position};
 use game::WidgetIds;
 use resources::{DeltaTime, Input, Map, Turn, TurnState};
 
@@ -118,7 +118,8 @@ impl<'a> System<'a> for PlayerSelectSystem {
     }
 }
 
-pub struct ActionMenuSystem<'a, 'b> where
+pub struct ActionMenuSystem<'a, 'b>
+where
     'b: 'a,
 {
     ui: &'a mut conrod::UiCell<'b>,
@@ -127,10 +128,7 @@ pub struct ActionMenuSystem<'a, 'b> where
 
 impl<'a, 'b> ActionMenuSystem<'a, 'b> {
     pub fn new(ui: &'a mut conrod::UiCell<'b>, widget_ids: &'a WidgetIds) -> Self {
-        ActionMenuSystem {
-            ui,
-            widget_ids,
-        }
+        ActionMenuSystem { ui, widget_ids }
     }
 }
 
@@ -170,7 +168,11 @@ impl<'a, 'b, 'c> System<'c> for ActionMenuSystem<'a, 'b> {
 
 pub struct RunSelectSystem;
 
-fn calculate_run_targets(start: Point2<u32>, map_size: Vector2<u32>, max_distance: u32) -> Vec<Point2<u32>> {
+fn calculate_run_targets(
+    start: Point2<u32>,
+    map_size: Vector2<u32>,
+    max_distance: u32,
+) -> Vec<Point2<u32>> {
     let mut targets = Vec::new();
 
     // TODO make this based on actual pathfinding rather than just manhattan distance
@@ -200,38 +202,47 @@ fn calculate_run_targets(start: Point2<u32>, map_size: Vector2<u32>, max_distanc
 
 impl<'a> System<'a> for RunSelectSystem {
     type SystemData = (
-        Entities<'a>,
         Fetch<'a, Input>,
         FetchMut<'a, Turn>,
-        FetchMut<'a, Map>,
+        Fetch<'a, Map>,
+        WriteStorage<'a, CanMove>,
         ReadStorage<'a, Cursor>,
         ReadStorage<'a, Position>,
         WriteStorage<'a, Player>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
-        let (entities, input, mut turn, mut map, cursors, positions, mut players) = data;
+        let (input, mut turn, map, mut can_moves, cursors, positions, mut players) = data;
 
         if let TurnState::SelectRun { player: player_ent } = turn.state {
-
             // Find the player
-            let (_, player, player_pos) = (&*entities, &mut players, &positions).join()
-                .find(|&(ref entity, _, _)| entity == &player_ent).unwrap();
+            let player = players.get_mut(player_ent).unwrap();
+            let player_pos = positions.get(player_ent).unwrap();
 
-            // Calculate highlighted tiles if required
-            if map.highlights.is_empty() {
+            // Calculate where they can run to, if required
+            if can_moves.get(player_ent).is_none() {
                 let tile_pos = Point2::new(
                     (player_pos.pos.x / 64.0) as u32,
                     (player_pos.pos.y / 64.0) as u32,
                 );
                 let map_size = Vector2::new(map.map.width, map.map.height);
-                map.highlights = calculate_run_targets(tile_pos, map_size, 8);
+                let dests = calculate_run_targets(tile_pos, map_size, 8);
+                let new_can_move = CanMove { dests };
+                can_moves.insert(player_ent, new_can_move);
             }
+            // FIXME: find a way to avoid this clone
+            let move_dests = can_moves.get(player_ent).unwrap().dests.clone();
 
             for (cursor, cursor_pos) in (&cursors, &positions).join() {
                 if input.select {
-                    if cursor.state == CursorState::Still && cursor_pos.pos != player_pos.pos {
-                        map.highlights.clear();
+                    let cursor_tile_pos = Point2::new(
+                        (cursor_pos.pos.x / 64.0) as u32,
+                        (cursor_pos.pos.y / 64.0) as u32,
+                    );
+                    if cursor.state == CursorState::Still && cursor_pos.pos != player_pos.pos
+                        && move_dests.contains(&cursor_tile_pos)
+                    {
+                        can_moves.remove(player_ent).unwrap();
                         turn.state = TurnState::Running {
                             player: player_ent,
                             dest: cursor_pos.pos,
@@ -242,7 +253,7 @@ impl<'a> System<'a> for RunSelectSystem {
                         }
                     }
                 } else if input.cancel {
-                    map.highlights.clear();
+                    can_moves.remove(player_ent).unwrap();
                     turn.state = TurnState::SelectPlayer;
                 }
             }
@@ -264,7 +275,6 @@ impl<'a> System<'a> for PlayerMovementSystem {
         let (dt, mut turn, mut players, mut positions) = data;
 
         for (player, position) in (&mut players, &mut positions).join() {
-
             if let PlayerState::Running { velocity, target } = player.state {
                 let disp = target - position.pos;
                 let required_dt_x = required_time(disp.x, velocity.x);

@@ -21,8 +21,8 @@ mod two;
 
 use std::time;
 
-use gfx::Device;
 use gfx::format::DepthStencil;
+use gfx::Device;
 use glutin::{ContextBuilder, Event, EventsLoop, GlContext, WindowBuilder, WindowEvent};
 
 use game::Game;
@@ -42,7 +42,9 @@ fn main() {
     let mut encoder: gfx::Encoder<_, _> = factory.create_command_buffer().into();
 
     let sprite_renderer = two::Renderer::new(&mut factory);
-    let mut ui_renderer = conrod::backend::gfx::Renderer::new(&mut factory, &rtv, window.hidpi_factor() as f64).unwrap();
+    let mut ui_renderer =
+        conrod::backend::gfx::Renderer::new(&mut factory, &rtv, window.hidpi_factor() as f64)
+            .unwrap();
 
     let mut game = Game::new(&mut factory);
 
@@ -69,7 +71,9 @@ fn main() {
                 }
             }
 
-            if let Some(input) = conrod::backend::winit::convert_event(event.clone(), window.window()) {
+            if let Some(input) =
+                conrod::backend::winit::convert_event(event.clone(), window.window())
+            {
                 game.on_ui_input(input);
             }
         });

@@ -1,5 +1,4 @@
 use std::path::Path;
-use std::vec::Vec;
 
 use cgmath::Point2;
 use conrod::{self, Colorable, Positionable, Widget};
@@ -10,10 +9,11 @@ use glutin::{ElementState, KeyboardInput, VirtualKeyCode};
 use specs::{RunNow, World};
 use tiled;
 
-use components::{Cursor, CursorState, Player, PlayerState, Position, Size, Sprite};
-use systems::{ActionMenuSystem, CursorMovementSystem, PlayerSelectSystem, RunSelectSystem, PlayerMovementSystem};
+use components::{CanMove, Cursor, CursorState, Player, PlayerState, Position, Size, Sprite};
 use render::RenderSystem;
 use resources::{Assets, DeltaTime, Input, Map, Turn, TurnState};
+use systems::{ActionMenuSystem, CursorMovementSystem, PlayerMovementSystem, PlayerSelectSystem,
+              RunSelectSystem};
 use two;
 
 widget_ids!(pub struct WidgetIds {
@@ -50,6 +50,7 @@ where
         F: gfx::Factory<R>,
     {
         let mut world = World::new();
+        world.register::<CanMove>();
         world.register::<Player>();
         world.register::<Position>();
         world.register::<Size>();
@@ -73,7 +74,7 @@ where
         world.add_resource(DeltaTime { dt: 0.0 });
         world.add_resource(assets);
         world.add_resource(Input::default());
-        world.add_resource(Map { map, highlights: Vec::new() });
+        world.add_resource(Map { map });
 
         world.add_resource(Turn {
             state: TurnState::SelectPlayer,
@@ -98,7 +99,9 @@ where
         // Create players
         world
             .create_entity()
-            .with(Player { state: PlayerState::Still })
+            .with(Player {
+                state: PlayerState::Still,
+            })
             .with(Position {
                 pos: Point2::new(128.0, 128.0),
             })
@@ -111,7 +114,9 @@ where
 
         world
             .create_entity()
-            .with(Player { state: PlayerState::Still })
+            .with(Player {
+                state: PlayerState::Still,
+            })
             .with(Position {
                 pos: Point2::new(256.0, 256.0),
             })

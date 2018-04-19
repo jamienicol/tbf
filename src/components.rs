@@ -42,11 +42,16 @@ pub enum PlayerState {
     Still,
     Running {
         velocity: Vector2<f32>,
-        target: Point2<f32>
+        target: Point2<f32>,
     },
 }
 
 #[derive(Component)]
 pub struct Player {
     pub state: PlayerState,
+}
+
+#[derive(Component)]
+pub struct CanMove {
+    pub dests: Vec<Point2<u32>>,
 }
