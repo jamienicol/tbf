@@ -61,15 +61,11 @@ fn main() {
                     WindowEvent::Resized(_, _) => {
                         gfx_window_glutin::update_views(&window, &mut rtv, &mut stv);
                     }
-                    WindowEvent::KeyboardInput { input, .. } => {
-                        game.on_keyboard_event(&input);
-                    }
-                    WindowEvent::Focused(focused) => {
-                        game.on_focused_event(focused);
-                    }
                     _ => (),
                 }
             }
+
+            game.on_event(&event);
 
             if let Some(input) =
                 conrod::backend::winit::convert_event(event.clone(), window.window())

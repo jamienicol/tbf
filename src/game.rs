@@ -5,7 +5,7 @@ use conrod::{self, Colorable, Positionable, Widget};
 use fps_counter::FPSCounter;
 use gfx;
 use gfx::handle::{RenderTargetView, ShaderResourceView};
-use glutin::{ElementState, KeyboardInput, VirtualKeyCode};
+use glutin::{ElementState, Event, VirtualKeyCode, WindowEvent};
 use specs::{RunNow, World};
 use tiled;
 
@@ -152,53 +152,60 @@ where
         }
     }
 
-    pub fn on_focused_event(&mut self, focused: bool) {
-        if !focused {
-            *self.world.write_resource::<Input>() = Input::default();
-        }
-    }
-
-    pub fn on_keyboard_event(&mut self, event: &KeyboardInput) {
+    pub fn on_event(&mut self, event: &Event) {
         let mut input = self.world.write_resource::<Input>();
 
-        match event.virtual_keycode {
-            Some(VirtualKeyCode::Left) => {
-                input.left = match event.state {
-                    ElementState::Pressed => true,
-                    ElementState::Released => false,
-                };
+        if let Event::WindowEvent { event, .. } = event {
+            match event {
+                WindowEvent::KeyboardInput {
+                    input: keyboard_input,
+                    ..
+                } => match keyboard_input.virtual_keycode {
+                    Some(VirtualKeyCode::Left) => {
+                        input.left = match keyboard_input.state {
+                            ElementState::Pressed => true,
+                            ElementState::Released => false,
+                        };
+                    }
+                    Some(VirtualKeyCode::Up) => {
+                        input.up = match keyboard_input.state {
+                            ElementState::Pressed => true,
+                            ElementState::Released => false,
+                        };
+                    }
+                    Some(VirtualKeyCode::Right) => {
+                        input.right = match keyboard_input.state {
+                            ElementState::Pressed => true,
+                            ElementState::Released => false,
+                        };
+                    }
+                    Some(VirtualKeyCode::Down) => {
+                        input.down = match keyboard_input.state {
+                            ElementState::Pressed => true,
+                            ElementState::Released => false,
+                        };
+                    }
+                    Some(VirtualKeyCode::Space) => {
+                        input.select = match keyboard_input.state {
+                            ElementState::Pressed => true,
+                            ElementState::Released => false,
+                        };
+                    }
+                    Some(VirtualKeyCode::Escape) => {
+                        input.cancel = match keyboard_input.state {
+                            ElementState::Pressed => true,
+                            ElementState::Released => false,
+                        };
+                    }
+                    _ => {}
+                },
+                WindowEvent::Focused(focused) => {
+                    if !focused {
+                        *input = Input::default();
+                    }
+                }
+                _ => (),
             }
-            Some(VirtualKeyCode::Up) => {
-                input.up = match event.state {
-                    ElementState::Pressed => true,
-                    ElementState::Released => false,
-                };
-            }
-            Some(VirtualKeyCode::Right) => {
-                input.right = match event.state {
-                    ElementState::Pressed => true,
-                    ElementState::Released => false,
-                };
-            }
-            Some(VirtualKeyCode::Down) => {
-                input.down = match event.state {
-                    ElementState::Pressed => true,
-                    ElementState::Released => false,
-                };
-            }
-            Some(VirtualKeyCode::Space) => {
-                input.select = match event.state {
-                    ElementState::Pressed => true,
-                    ElementState::Released => false,
-                };
-            }
-            Some(VirtualKeyCode::Escape) => {
-                input.cancel = match event.state {
-                    ElementState::Pressed => true,
-                    ElementState::Released => false,
-                };
-            }
-            _ => {}
         }
     }
 
