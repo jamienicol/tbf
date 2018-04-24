@@ -1,4 +1,3 @@
-use cgmath::Point2;
 use gfx;
 use gfx::handle::RenderTargetView;
 use specs::{Fetch, Join, ReadStorage, System};
@@ -104,30 +103,23 @@ where
         // render highlights
         for (can_move,) in (&can_moves,).join() {
             let mut highlights_batch = two::SpriteBatch::new();
-            let mut lowlights_batch = two::SpriteBatch::new();
 
-            for x in 0..map.map.width {
-                for y in 0..map.map.height {
-                    let mut sprite = two::Sprite::new(self.factory);
-                    sprite.dest = two::Rect {
-                        x: (x * map.map.tile_width) as f32,
-                        y: (y * map.map.tile_height) as f32,
-                        width: 64.0,
-                        height: 64.0,
-                    };
-                    sprite.src = two::Rect {
-                        x: 0.0,
-                        y: 0.0,
-                        width: 1.0,
-                        height: 1.0,
-                    };
+            for dest in &can_move.dests {
+                let mut sprite = two::Sprite::new(self.factory);
+                sprite.dest = two::Rect {
+                    x: (dest.x * map.map.tile_width) as f32,
+                    y: (dest.y * map.map.tile_height) as f32,
+                    width: 64.0,
+                    height: 64.0,
+                };
+                sprite.src = two::Rect {
+                    x: 0.0,
+                    y: 0.0,
+                    width: 1.0,
+                    height: 1.0,
+                };
 
-                    if can_move.dests.contains(&Point2::new(x, y)) {
-                        highlights_batch.sprites.push(sprite);
-                    } else {
-                        lowlights_batch.sprites.push(sprite);
-                    }
-                }
+                highlights_batch.sprites.push(sprite);
             }
 
             self.renderer.render_spritebatch(
@@ -136,13 +128,6 @@ where
                 &self.out,
                 &highlights_batch,
                 &assets.images["highlight"],
-            );
-            self.renderer.render_spritebatch(
-                self.factory,
-                self.encoder,
-                &self.out,
-                &lowlights_batch,
-                &assets.images["lowlight"],
             );
         }
 

@@ -64,7 +64,6 @@ where
         assets.load_image(factory, "cursor.png", "cursor".to_string());
         assets.load_image(factory, "player.png", "player".to_string());
         assets.load_image(factory, "highlight.png", "highlight".to_string());
-        assets.load_image(factory, "lowlight.png", "lowlight".to_string());
 
         // Load map
         let map =

@@ -219,15 +219,15 @@ fn calculate_run_targets(
                 if start.y >= y {
                     targets.push(Point2::new(start.x - x, start.y - y));
                 }
-                if start.y < map_size.y - y {
+                if y != 0 && start.y < map_size.y - y {
                     targets.push(Point2::new(start.x - x, start.y + y));
                 }
             }
-            if start.x < map_size.x - x {
+            if x != 0 && start.x < map_size.x - x {
                 if start.y >= y {
                     targets.push(Point2::new(start.x + x, start.y - y));
                 }
-                if start.y < map_size.y - y {
+                if y != 0 && start.y < map_size.y - y {
                     targets.push(Point2::new(start.x + x, start.y + y));
                 }
             }
