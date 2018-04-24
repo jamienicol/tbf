@@ -10,6 +10,7 @@ use resources::{DeltaTime, Input, Map, Turn, TurnState};
 const CURSOR_SPEED: f32 = 320.0;
 const PLAYER_SPEED: f32 = 640.0;
 const TILE_SIZE: u32 = 64;
+const PLAYER_MOVE_DISTANCE: u32 = 8;
 
 fn tile_to_subtile(tile_pos: &Point2<u32>) -> Point2<f32> {
     Point2::new(
@@ -259,8 +260,13 @@ impl<'a> System<'a> for RunSelectSystem {
             // Calculate where they can run to, if required
             if can_moves.get(player_ent).is_none() {
                 let map_size = Vector2::new(map.map.width, map.map.height);
-                let dests = calculate_run_targets(player_pos.pos, map_size, 8);
-                let new_can_move = CanMove { dests };
+                let dests = calculate_run_targets(player_pos.pos, map_size, PLAYER_MOVE_DISTANCE);
+                let new_can_move = CanMove {
+                    start: player_pos.pos,
+                    distance: PLAYER_MOVE_DISTANCE,
+                    dests,
+                    path: Vec::new(),
+                };
                 can_moves.insert(player_ent, new_can_move);
             }
             // FIXME: find a way to avoid this clone
@@ -271,19 +277,53 @@ impl<'a> System<'a> for RunSelectSystem {
                     if cursor.state == CursorState::Still && cursor_pos.pos != player_pos.pos
                         && move_dests.contains(&cursor_pos.pos)
                     {
-                        can_moves.remove(player_ent).unwrap();
                         turn.state = TurnState::Running { player: player_ent };
                         player.state = PlayerState::Running {
-                            velocity: Vector2::new(
-                                cursor_pos.pos.x as f32 - player_pos.pos.x as f32,
-                                cursor_pos.pos.y as f32 - player_pos.pos.y as f32,
-                            ).normalize_to(PLAYER_SPEED),
-                            target: cursor_pos.pos,
-                        }
+                            path: can_moves.get(player_ent).unwrap().path.clone(),
+                        };
+                        can_moves.remove(player_ent).unwrap();
                     }
                 } else if input.cancel {
                     can_moves.remove(player_ent).unwrap();
                     turn.state = TurnState::SelectPlayer;
+                }
+            }
+        }
+    }
+}
+
+pub struct PathSelectSystem;
+
+impl<'a> System<'a> for PathSelectSystem {
+    type SystemData = (
+        ReadStorage<'a, Cursor>,
+        ReadStorage<'a, TilePosition>,
+        WriteStorage<'a, CanMove>,
+    );
+
+    fn run(&mut self, data: Self::SystemData) {
+        let (cursors, tile_positions, mut can_moves) = data;
+
+        for (_cursor, cursor_pos) in (&cursors, &tile_positions).join() {
+            for (can_move,) in (&mut can_moves,).join() {
+                if Some(&cursor_pos.pos) != can_move.path.last() {
+                    // If this is a valid move location
+                    if can_move.dests.contains(&cursor_pos.pos) {
+                        // If we cross our existing path then shrink back
+                        if let Some((i, _)) = can_move
+                            .path
+                            .iter()
+                            .enumerate()
+                            .find(|(_, &step)| step == cursor_pos.pos)
+                        {
+                            can_move.path.truncate(i + 1);
+                        } else {
+                            // Otherwise, check our path isn't too long
+                            if can_move.path.len() <= can_move.distance as usize {
+                                can_move.path.push(cursor_pos.pos.clone());
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -307,24 +347,45 @@ impl<'a> System<'a> for PlayerMovementSystem {
         for (player, tile_position, sub_tile_position) in
             (&mut players, &mut tile_positions, &mut sub_tile_positions).join()
         {
-            if let PlayerState::Running { velocity, target } = player.state {
-                let disp = tile_to_subtile(&target) - sub_tile_position.pos;
-                let required_dt_x = required_time(disp.x, velocity.x);
-                let required_dt_y = required_time(disp.y, velocity.y);
+            let mut finished_run = false;
+            if let PlayerState::Running { ref mut path } = player.state {
+                let mut remaining_dt = dt.dt;
 
-                let remaining_dt_x = dt.dt.min(required_dt_x);
-                let remaining_dt_y = dt.dt.min(required_dt_y);
+                while !finished_run && remaining_dt > 0.0 {
+                    let target = match path.first() {
+                        None => break,
+                        Some(target) => target.clone(),
+                    };
+                    let disp = tile_to_subtile(&target) - sub_tile_position.pos;
 
-                // TODO: update tile position along the way rather than only at the end.
-                // Also add assertion at each tile that tile positon == subtile positon
-                sub_tile_position.pos +=
-                    Vector2::new(velocity.x * remaining_dt_x, velocity.y * remaining_dt_y);
+                    if disp != Vector2::new(0.0, 0.0) {
+                        let velocity = disp.normalize_to(PLAYER_SPEED);
 
-                if sub_tile_position.pos == tile_to_subtile(&target) {
-                    tile_position.pos = target;
-                    player.state = PlayerState::Still;
-                    turn.state = TurnState::SelectPlayer;
+                        let required_dt_x = required_time(disp.x, velocity.x);
+                        let required_dt_y = required_time(disp.y, velocity.y);
+
+                        let remaining_dt_x = remaining_dt.min(required_dt_x);
+                        let remaining_dt_y = remaining_dt.min(required_dt_y);
+
+                        sub_tile_position.pos +=
+                            Vector2::new(velocity.x * remaining_dt_x, velocity.y * remaining_dt_y);
+                        remaining_dt -= remaining_dt_x.max(remaining_dt_y);
+                    }
+
+                    if sub_tile_position.pos == tile_to_subtile(&target) {
+                        tile_position.pos = target.clone();
+                        path.remove(0);
+                    }
+
+                    if path.is_empty() {
+                        finished_run = true;
+                    }
                 }
+            }
+
+            if finished_run {
+                player.state = PlayerState::Still;
+                turn.state = TurnState::SelectPlayer;
             }
         }
     }

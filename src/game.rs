@@ -13,8 +13,8 @@ use components::{CanMove, Cursor, CursorState, Player, PlayerState, Size, Sprite
                  TilePosition};
 use render::RenderSystem;
 use resources::{Assets, DeltaTime, Input, Map, Turn, TurnState};
-use systems::{ActionMenuSystem, CursorMovementSystem, PlayerMovementSystem, PlayerSelectSystem,
-              RunSelectSystem};
+use systems::{ActionMenuSystem, CursorMovementSystem, PathSelectSystem, PlayerMovementSystem,
+              PlayerSelectSystem, RunSelectSystem};
 use two;
 
 widget_ids!(pub struct WidgetIds {
@@ -33,6 +33,7 @@ where
     cursor_movement_system: CursorMovementSystem,
     player_select_system: PlayerSelectSystem,
     run_select_system: RunSelectSystem,
+    path_select_system: PathSelectSystem,
     player_movement_system: PlayerMovementSystem,
 
     fps_counter: FPSCounter,
@@ -143,8 +144,7 @@ where
         let widget_ids = WidgetIds::new(ui.widget_id_generator());
         let ui_image_map = conrod::image::Map::new();
 
-        const FONT_PATH: &str =
-            concat!(env!("CARGO_MANIFEST_DIR"), "/resources/DejaVuSans.ttf");
+        const FONT_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/resources/DejaVuSans.ttf");
         ui.fonts.insert_from_file(FONT_PATH).unwrap();
 
         Self {
@@ -152,6 +152,7 @@ where
             cursor_movement_system: CursorMovementSystem,
             player_select_system: PlayerSelectSystem,
             run_select_system: RunSelectSystem,
+            path_select_system: PathSelectSystem,
             player_movement_system: PlayerMovementSystem,
 
             fps_counter,
@@ -240,6 +241,7 @@ where
             }
             TurnState::SelectRun { .. } => {
                 self.cursor_movement_system.run_now(&self.world.res);
+                self.path_select_system.run_now(&self.world.res);
                 self.run_select_system.run_now(&self.world.res);
             }
             TurnState::Running { .. } => {

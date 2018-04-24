@@ -131,6 +131,37 @@ where
             );
         }
 
+        // render paths
+        for (can_move,) in (&can_moves,).join() {
+            let mut path_batch = two::SpriteBatch::new();
+
+            for path in &can_move.path {
+                let mut sprite = two::Sprite::new(self.factory);
+                sprite.dest = two::Rect {
+                    x: (path.x * map.map.tile_width) as f32,
+                    y: (path.y * map.map.tile_height) as f32,
+                    width: 64.0,
+                    height: 64.0,
+                };
+                sprite.src = two::Rect {
+                    x: 0.0,
+                    y: 0.0,
+                    width: 1.0,
+                    height: 1.0,
+                };
+
+                path_batch.sprites.push(sprite);
+            }
+
+            self.renderer.render_spritebatch(
+                self.factory,
+                self.encoder,
+                &self.out,
+                &path_batch,
+                &assets.images["player"],
+            );
+        }
+
         // render sprite components
         for (position, size, sprite) in (&sub_tile_positions, &sizes, &sprites).join() {
             let texture = &assets.images[sprite.image_id];

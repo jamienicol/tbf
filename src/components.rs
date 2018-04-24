@@ -45,10 +45,7 @@ pub struct Cursor {
 
 pub enum PlayerState {
     Still,
-    Running {
-        velocity: Vector2<f32>,
-        target: Point2<u32>,
-    },
+    Running { path: Vec<Point2<u32>> },
 }
 
 #[derive(Component)]
@@ -58,5 +55,8 @@ pub struct Player {
 
 #[derive(Component)]
 pub struct CanMove {
+    pub start: Point2<u32>,
+    pub distance: u32,
     pub dests: Vec<Point2<u32>>,
+    pub path: Vec<Point2<u32>>,
 }
