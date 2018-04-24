@@ -234,7 +234,7 @@ fn calculate_run_targets(
         }
     }
 
-    return targets;
+    targets
 }
 
 impl<'a> System<'a> for RunSelectSystem {

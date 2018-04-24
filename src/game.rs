@@ -144,7 +144,7 @@ where
         let widget_ids = WidgetIds::new(ui.widget_id_generator());
         let ui_image_map = conrod::image::Map::new();
 
-        const FONT_PATH: &'static str =
+        const FONT_PATH: &str =
             concat!(env!("CARGO_MANIFEST_DIR"), "/resources/DejaVuSans.ttf");
         ui.fonts.insert_from_file(FONT_PATH).unwrap();
 

@@ -43,7 +43,7 @@ fn main() {
 
     let sprite_renderer = two::Renderer::new(&mut factory);
     let mut ui_renderer =
-        conrod::backend::gfx::Renderer::new(&mut factory, &rtv, window.hidpi_factor() as f64)
+        conrod::backend::gfx::Renderer::new(&mut factory, &rtv, f64::from(window.hidpi_factor()))
             .unwrap();
 
     let mut game = Game::new(&mut factory);
