@@ -9,7 +9,8 @@ use glutin::{ElementState, Event, VirtualKeyCode, WindowEvent};
 use specs::{RunNow, World};
 use tiled;
 
-use components::{CanMove, Cursor, CursorState, Player, PlayerState, Position, Size, Sprite};
+use components::{CanMove, Cursor, CursorState, Player, PlayerState, Size, Sprite, SubTilePosition,
+                 TilePosition};
 use render::RenderSystem;
 use resources::{Assets, DeltaTime, Input, Map, Turn, TurnState};
 use systems::{ActionMenuSystem, CursorMovementSystem, PlayerMovementSystem, PlayerSelectSystem,
@@ -52,7 +53,8 @@ where
         let mut world = World::new();
         world.register::<CanMove>();
         world.register::<Player>();
-        world.register::<Position>();
+        world.register::<TilePosition>();
+        world.register::<SubTilePosition>();
         world.register::<Size>();
         world.register::<Sprite>();
         world.register::<Cursor>();
@@ -86,7 +88,10 @@ where
             .with(Cursor {
                 state: CursorState::Still,
             })
-            .with(Position {
+            .with(TilePosition {
+                pos: Point2::new(0, 0),
+            })
+            .with(SubTilePosition {
                 pos: Point2::new(0.0, 0.0),
             })
             .with(Size {
@@ -102,7 +107,10 @@ where
             .with(Player {
                 state: PlayerState::Still,
             })
-            .with(Position {
+            .with(TilePosition {
+                pos: Point2::new(2, 2),
+            })
+            .with(SubTilePosition {
                 pos: Point2::new(128.0, 128.0),
             })
             .with(Size {
@@ -117,7 +125,10 @@ where
             .with(Player {
                 state: PlayerState::Still,
             })
-            .with(Position {
+            .with(TilePosition {
+                pos: Point2::new(4, 4),
+            })
+            .with(SubTilePosition {
                 pos: Point2::new(256.0, 256.0),
             })
             .with(Size {

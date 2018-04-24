@@ -1,7 +1,12 @@
 use cgmath::{Point2, Vector2};
 
 #[derive(Component, Debug)]
-pub struct Position {
+pub struct TilePosition {
+    pub pos: Point2<u32>,
+}
+
+#[derive(Component, Debug)]
+pub struct SubTilePosition {
     pub pos: Point2<f32>,
 }
 
@@ -29,7 +34,7 @@ pub enum CursorState {
     Still,
     Moving {
         velocity: Vector2<f32>,
-        target: Point2<f32>,
+        target: Point2<u32>,
     },
 }
 
@@ -42,7 +47,7 @@ pub enum PlayerState {
     Still,
     Running {
         velocity: Vector2<f32>,
-        target: Point2<f32>,
+        target: Point2<u32>,
     },
 }
 

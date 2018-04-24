@@ -3,7 +3,7 @@ use gfx;
 use gfx::handle::RenderTargetView;
 use specs::{Fetch, Join, ReadStorage, System};
 
-use components::{CanMove, Position, Size, Sprite};
+use components::{CanMove, Size, Sprite, SubTilePosition};
 use resources::{Assets, Map};
 
 use two;
@@ -51,13 +51,13 @@ where
         Fetch<'b, Assets<R>>,
         Fetch<'b, Map>,
         ReadStorage<'b, CanMove>,
-        ReadStorage<'b, Position>,
+        ReadStorage<'b, SubTilePosition>,
         ReadStorage<'b, Size>,
         ReadStorage<'b, Sprite>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
-        let (assets, map, can_moves, positions, sizes, sprites) = data;
+        let (assets, map, can_moves, sub_tile_positions, sizes, sprites) = data;
 
         // render map
         let tileset = &map.map.tilesets[0];
@@ -102,7 +102,7 @@ where
         );
 
         // render highlights
-        for (can_move, _position) in (&can_moves, &positions).join() {
+        for (can_move,) in (&can_moves,).join() {
             let mut highlights_batch = two::SpriteBatch::new();
             let mut lowlights_batch = two::SpriteBatch::new();
 
@@ -147,7 +147,7 @@ where
         }
 
         // render sprite components
-        for (position, size, sprite) in (&positions, &sizes, &sprites).join() {
+        for (position, size, sprite) in (&sub_tile_positions, &sizes, &sprites).join() {
             let texture = &assets.images[sprite.image_id];
 
             let mut sprite = two::Sprite::new(self.factory);

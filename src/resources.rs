@@ -3,7 +3,6 @@ use std::default::Default;
 use std::path::PathBuf;
 use std::string::String;
 
-use cgmath::Point2;
 use gfx;
 use specs::Entity;
 use tiled;
@@ -74,9 +73,16 @@ pub struct Map {
 #[derive(Debug, Clone)]
 pub enum TurnState {
     SelectPlayer,
-    ActionMenu { player: Entity },
-    SelectRun { player: Entity },
-    Running { player: Entity, dest: Point2<f32> },
+    ActionMenu {
+        player: Entity,
+    },
+    SelectRun {
+        player: Entity,
+    },
+    Running {
+        player: Entity,
+        // dest: Point2<f32>,
+    },
     // SelectPass { player: Entity },
     // Passing { player: Entity, dest: Point2<f32> },
 }
