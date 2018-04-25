@@ -156,6 +156,40 @@ impl<'a> System<'a> for PlayerSelectSystem {
     }
 }
 
+fn calculate_run_targets<'a>(
+    start_pos: &Point2<u32>,
+    map: &Map,
+    max_distance: u32,
+    _players: &ReadStorage<'a, Player>,
+    _tile_positions: &ReadStorage<'a, TilePosition>,
+) -> Vec<Point2<u32>> {
+    let mut targets = Vec::new();
+
+    // TODO make this based on actual pathfinding rather than just manhattan distance
+    for x in 0..max_distance + 1 {
+        for y in 0..max_distance - x + 1 {
+            if start_pos.x >= x {
+                if start_pos.y >= y {
+                    targets.push(Point2::new(start_pos.x - x, start_pos.y - y));
+                }
+                if y != 0 && start_pos.y < map.map.height - y {
+                    targets.push(Point2::new(start_pos.x - x, start_pos.y + y));
+                }
+            }
+            if x != 0 && start_pos.x < map.map.width - x {
+                if start_pos.y >= y {
+                    targets.push(Point2::new(start_pos.x + x, start_pos.y - y));
+                }
+                if y != 0 && start_pos.y < map.map.height - y {
+                    targets.push(Point2::new(start_pos.x + x, start_pos.y + y));
+                }
+            }
+        }
+    }
+
+    targets
+}
+
 pub struct ActionMenuSystem<'a, 'b>
 where
     'b: 'a,
@@ -171,10 +205,16 @@ impl<'a, 'b> ActionMenuSystem<'a, 'b> {
 }
 
 impl<'a, 'b, 'c> System<'c> for ActionMenuSystem<'a, 'b> {
-    type SystemData = FetchMut<'c, Turn>;
+    type SystemData = (
+        FetchMut<'c, Turn>,
+        Fetch<'c, Map>,
+        ReadStorage<'c, Player>,
+        ReadStorage<'c, TilePosition>,
+        WriteStorage<'c, CanMove>,
+    );
 
     fn run(&mut self, data: Self::SystemData) {
-        let mut turn = data;
+        let (mut turn, map, players, tile_positions, mut can_moves) = data;
 
         if let TurnState::ActionMenu { player } = turn.state {
             if conrod::widget::Button::new()
@@ -184,6 +224,21 @@ impl<'a, 'b, 'c> System<'c> for ActionMenuSystem<'a, 'b> {
                 .set(self.widget_ids.action_menu_run, self.ui)
                 .was_clicked()
             {
+                let player_pos = tile_positions.get(player).unwrap().clone();
+                let dests = calculate_run_targets(
+                    &player_pos.pos,
+                    &map,
+                    PLAYER_MOVE_DISTANCE,
+                    &players,
+                    &tile_positions,
+                );
+                let can_move = CanMove {
+                    start: player_pos.pos,
+                    distance: PLAYER_MOVE_DISTANCE,
+                    dests: dests,
+                    path: Vec::new(),
+                };
+                can_moves.insert(player, can_move);
                 turn.state = TurnState::SelectRun { player };
             }
             conrod::widget::Button::new()
@@ -206,43 +261,10 @@ impl<'a, 'b, 'c> System<'c> for ActionMenuSystem<'a, 'b> {
 
 pub struct RunSelectSystem;
 
-fn calculate_run_targets(
-    start: Point2<u32>,
-    map_size: Vector2<u32>,
-    max_distance: u32,
-) -> Vec<Point2<u32>> {
-    let mut targets = Vec::new();
-
-    // TODO make this based on actual pathfinding rather than just manhattan distance
-    for x in 0..max_distance + 1 {
-        for y in 0..max_distance - x + 1 {
-            if start.x >= x {
-                if start.y >= y {
-                    targets.push(Point2::new(start.x - x, start.y - y));
-                }
-                if y != 0 && start.y < map_size.y - y {
-                    targets.push(Point2::new(start.x - x, start.y + y));
-                }
-            }
-            if x != 0 && start.x < map_size.x - x {
-                if start.y >= y {
-                    targets.push(Point2::new(start.x + x, start.y - y));
-                }
-                if y != 0 && start.y < map_size.y - y {
-                    targets.push(Point2::new(start.x + x, start.y + y));
-                }
-            }
-        }
-    }
-
-    targets
-}
-
 impl<'a> System<'a> for RunSelectSystem {
     type SystemData = (
         Fetch<'a, Input>,
         FetchMut<'a, Turn>,
-        Fetch<'a, Map>,
         WriteStorage<'a, CanMove>,
         ReadStorage<'a, Cursor>,
         ReadStorage<'a, TilePosition>,
@@ -250,25 +272,13 @@ impl<'a> System<'a> for RunSelectSystem {
     );
 
     fn run(&mut self, data: Self::SystemData) {
-        let (input, mut turn, map, mut can_moves, cursors, tile_positions, mut players) = data;
+        let (input, mut turn, mut can_moves, cursors, tile_positions, mut players) = data;
 
         if let TurnState::SelectRun { player: player_ent } = turn.state {
             // Find the player
             let player = players.get_mut(player_ent).unwrap();
             let player_pos = tile_positions.get(player_ent).unwrap();
 
-            // Calculate where they can run to, if required
-            if can_moves.get(player_ent).is_none() {
-                let map_size = Vector2::new(map.map.width, map.map.height);
-                let dests = calculate_run_targets(player_pos.pos, map_size, PLAYER_MOVE_DISTANCE);
-                let new_can_move = CanMove {
-                    start: player_pos.pos,
-                    distance: PLAYER_MOVE_DISTANCE,
-                    dests,
-                    path: Vec::new(),
-                };
-                can_moves.insert(player_ent, new_can_move);
-            }
             // FIXME: find a way to avoid this clone
             let move_dests = can_moves.get(player_ent).unwrap().dests.clone();
 
