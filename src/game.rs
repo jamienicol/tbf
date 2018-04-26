@@ -166,8 +166,8 @@ where
     pub fn on_event(&mut self, event: &Event) {
         let mut input = self.world.write_resource::<Input>();
 
-        if let Event::WindowEvent { event, .. } = event {
-            match event {
+        if let Event::WindowEvent { ref event, .. } = *event {
+            match *event {
                 WindowEvent::KeyboardInput {
                     input: keyboard_input,
                     ..

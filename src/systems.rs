@@ -314,7 +314,7 @@ impl<'a> System<'a> for PathSelectSystem {
                             .path
                             .iter()
                             .enumerate()
-                            .find(|(_, &step)| step == cursor_pos.pos)
+                            .find(|&(_, &step)| step == cursor_pos.pos)
                         {
                             can_move.path.truncate(i + 1);
                         } else {
