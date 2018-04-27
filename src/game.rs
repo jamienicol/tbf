@@ -4,7 +4,11 @@ use cgmath::Point2;
 use conrod::{self, Colorable, Positionable, Widget};
 use fps_counter::FPSCounter;
 use gfx;
+use gfx_device_gl;
 use gfx::handle::{RenderTargetView, ShaderResourceView};
+use ggez::*;
+use ggez::timer;
+use ggez::graphics::{DrawMode};
 use glutin::{ElementState, Event, VirtualKeyCode, WindowEvent};
 use specs::{RunNow, World};
 use tiled;
@@ -290,5 +294,51 @@ where
         let primitives = self.ui.draw();
         ui_renderer.fill(encoder, (1280.0, 800.0), primitives, &self.ui_image_map);
         ui_renderer.draw(factory, encoder, &self.ui_image_map);
+    }
+}
+
+pub struct Game2<'a>
+{
+    game: Game<gfx_device_gl::Resources>,
+    sprite_renderer: two::Renderer<gfx_device_gl::Resources>,
+    ui_renderer: conrod::backend::gfx::Renderer<'a, gfx_device_gl::Resources>
+}
+
+impl<'a> Game2<'a>
+{
+    pub fn new(ctx: &mut Context,
+               sprite_renderer: two::Renderer<gfx_device_gl::Resources>,
+               ui_renderer: conrod::backend::gfx::Renderer<'a, gfx_device_gl::Resources>) -> GameResult<Self> {
+        let factory = graphics::get_factory(ctx);
+        let game = Game::new(factory);
+
+        let s = Self {
+            game,
+            sprite_renderer,
+            ui_renderer,
+        };
+        Ok(s)
+    }
+}
+
+impl<'a> event::EventHandler for Game2<'a>
+{
+    fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+        let dt = timer::duration_to_f64(timer::get_delta(ctx));
+        self.game.update(dt as f32);
+        Ok(())
+    }
+
+    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+        graphics::clear(ctx);
+
+        {
+            let (factory, device, encoder, dtv, rtv) = graphics::get_gfx_objects(ctx);
+
+            self.game.render(factory, encoder, &rtv, &self.sprite_renderer, &mut self.ui_renderer);
+        }
+
+        graphics::present(ctx);
+        Ok(())
     }
 }
