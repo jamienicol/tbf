@@ -192,7 +192,7 @@ fn calculate_run_targets<'a>(
         .filter(|target| {
             (players, tile_positions)
                 .join()
-                .find(|(_, pos)| pos.pos == *target)
+                .find(|&(_, pos)| pos.pos == *target)
                 .is_none()
         })
         .collect()
