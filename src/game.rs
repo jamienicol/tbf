@@ -197,7 +197,7 @@ where
                             ElementState::Released => false,
                         };
                     }
-                    Some(VirtualKeyCode::Space) => {
+                    Some(VirtualKeyCode::Return) | Some(VirtualKeyCode::Space) => {
                         input.select = match keyboard_input.state {
                             ElementState::Pressed => true,
                             ElementState::Released => false,

@@ -211,6 +211,7 @@ impl<'a, 'b> ActionMenuSystem<'a, 'b> {
 impl<'a, 'b, 'c> System<'c> for ActionMenuSystem<'a, 'b> {
     type SystemData = (
         FetchMut<'c, Turn>,
+        Fetch<'c, Input>,
         Fetch<'c, Map>,
         ReadStorage<'c, Player>,
         ReadStorage<'c, TilePosition>,
@@ -218,7 +219,7 @@ impl<'a, 'b, 'c> System<'c> for ActionMenuSystem<'a, 'b> {
     );
 
     fn run(&mut self, data: Self::SystemData) {
-        let (mut turn, map, players, tile_positions, mut can_moves) = data;
+        let (mut turn, input, map, players, tile_positions, mut can_moves) = data;
 
         if let TurnState::ActionMenu { player } = turn.state {
             if conrod::widget::Button::new()
@@ -226,7 +227,7 @@ impl<'a, 'b, 'c> System<'c> for ActionMenuSystem<'a, 'b> {
                 .top_right_with_margin_on(self.ui.window, 16.0)
                 .w_h(160.0, 32.0)
                 .set(self.widget_ids.action_menu_run, self.ui)
-                .was_clicked()
+                .was_clicked() || input.select
             {
                 let player_pos = tile_positions.get(player).unwrap().clone();
                 let dests = calculate_run_targets(
@@ -255,7 +256,7 @@ impl<'a, 'b, 'c> System<'c> for ActionMenuSystem<'a, 'b> {
                 .down_from(self.widget_ids.action_menu_pass, 16.0)
                 .w_h(160.0, 32.0)
                 .set(self.widget_ids.action_menu_cancel, self.ui)
-                .was_clicked()
+                .was_clicked() || input.cancel
             {
                 turn.state = TurnState::SelectPlayer;
             }
