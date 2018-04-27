@@ -158,7 +158,7 @@ where
                 self.encoder,
                 &self.out,
                 &path_batch,
-                &assets.images["player"],
+                &assets.images["path"],
             );
         }
 
