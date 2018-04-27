@@ -160,34 +160,38 @@ fn calculate_run_targets<'a>(
     start_pos: &Point2<u32>,
     map: &Map,
     max_distance: u32,
-    _players: &ReadStorage<'a, Player>,
-    _tile_positions: &ReadStorage<'a, TilePosition>,
+    players: &ReadStorage<'a, Player>,
+    tile_positions: &ReadStorage<'a, TilePosition>,
 ) -> Vec<Point2<u32>> {
-    let mut targets = Vec::new();
+
+    let mut potential_targets = Vec::with_capacity(4);
 
     // TODO make this based on actual pathfinding rather than just manhattan distance
     for x in 0..max_distance + 1 {
         for y in 0..max_distance - x + 1 {
             if start_pos.x >= x {
                 if start_pos.y >= y {
-                    targets.push(Point2::new(start_pos.x - x, start_pos.y - y));
+                    potential_targets.push(Point2::new(start_pos.x - x, start_pos.y - y));
                 }
                 if y != 0 && start_pos.y < map.map.height - y {
-                    targets.push(Point2::new(start_pos.x - x, start_pos.y + y));
+                    potential_targets.push(Point2::new(start_pos.x - x, start_pos.y + y));
                 }
             }
             if x != 0 && start_pos.x < map.map.width - x {
                 if start_pos.y >= y {
-                    targets.push(Point2::new(start_pos.x + x, start_pos.y - y));
+                    potential_targets.push(Point2::new(start_pos.x + x, start_pos.y - y));
                 }
                 if y != 0 && start_pos.y < map.map.height - y {
-                    targets.push(Point2::new(start_pos.x + x, start_pos.y + y));
+                    potential_targets.push(Point2::new(start_pos.x + x, start_pos.y + y));
                 }
             }
         }
     }
 
-    targets
+    potential_targets.into_iter()
+        .filter(|target|
+            (players, tile_positions).join().find(|(_, pos)| pos.pos == *target).is_none())
+        .collect()
 }
 
 pub struct ActionMenuSystem<'a, 'b>
