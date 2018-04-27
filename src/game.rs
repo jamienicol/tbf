@@ -7,6 +7,7 @@ use gfx;
 use gfx_device_gl;
 use gfx::handle::{RenderTargetView, ShaderResourceView};
 use ggez::*;
+use ggez::event;
 use ggez::timer;
 use ggez::graphics::{DrawMode};
 use glutin::{ElementState, Event, VirtualKeyCode, WindowEvent};
@@ -168,63 +169,6 @@ where
         }
     }
 
-    pub fn on_event(&mut self, event: &Event) {
-        let mut input = self.world.write_resource::<Input>();
-
-        if let Event::WindowEvent { ref event, .. } = *event {
-            match *event {
-                WindowEvent::KeyboardInput {
-                    input: keyboard_input,
-                    ..
-                } => match keyboard_input.virtual_keycode {
-                    Some(VirtualKeyCode::Left) => {
-                        input.left = match keyboard_input.state {
-                            ElementState::Pressed => true,
-                            ElementState::Released => false,
-                        };
-                    }
-                    Some(VirtualKeyCode::Up) => {
-                        input.up = match keyboard_input.state {
-                            ElementState::Pressed => true,
-                            ElementState::Released => false,
-                        };
-                    }
-                    Some(VirtualKeyCode::Right) => {
-                        input.right = match keyboard_input.state {
-                            ElementState::Pressed => true,
-                            ElementState::Released => false,
-                        };
-                    }
-                    Some(VirtualKeyCode::Down) => {
-                        input.down = match keyboard_input.state {
-                            ElementState::Pressed => true,
-                            ElementState::Released => false,
-                        };
-                    }
-                    Some(VirtualKeyCode::Return) | Some(VirtualKeyCode::Space) => {
-                        input.select = match keyboard_input.state {
-                            ElementState::Pressed => true,
-                            ElementState::Released => false,
-                        };
-                    }
-                    Some(VirtualKeyCode::Escape) => {
-                        input.cancel = match keyboard_input.state {
-                            ElementState::Pressed => true,
-                            ElementState::Released => false,
-                        };
-                    }
-                    _ => {}
-                },
-                WindowEvent::Focused(focused) => {
-                    if !focused {
-                        *input = Input::default();
-                    }
-                }
-                _ => (),
-            }
-        }
-    }
-
     pub fn on_ui_input(&mut self, input: conrod::event::Input) {
         self.ui.handle_event(input);
     }
@@ -340,5 +284,69 @@ impl<'a> event::EventHandler for Game2<'a>
 
         graphics::present(ctx);
         Ok(())
+    }
+
+    fn key_down_event(
+        &mut self,
+        ctx: &mut Context,
+        keycode: event::Keycode,
+        _keymod: event::Mod,
+        _repeat: bool
+    ) {
+        let mut input = self.game.world.write_resource::<Input>();
+
+        match keycode {
+            event::Keycode::Left => {
+                input.left = true;
+            }
+            event::Keycode::Up => {
+                input.up = true;
+            }
+            event::Keycode::Down => {
+                input.down = true;
+            }
+            event::Keycode::Right => {
+                input.right = true;
+            }
+            event::Keycode::Return | event::Keycode::Space => {
+                input.select = true;
+            }
+            event::Keycode::Escape => {
+                input.cancel = true;
+            }
+            _ => {}
+        }
+    }
+
+    fn key_up_event(
+        &mut self,
+        ctx: &mut Context,
+        keycode: event::Keycode,
+        _keymod: event::Mod,
+        _repeat: bool
+    ) {
+        let mut input = self.game.world.write_resource::<Input>();
+
+        match keycode {
+            event::Keycode::Left => {
+                input.left = false;
+            }
+            event::Keycode::Up => {
+                input.up = false;
+            }
+            event::Keycode::Down => {
+                input.down = false;
+            }
+            event::Keycode::Right => {
+                input.right = false;
+            }
+            event::Keycode::Return | event::Keycode::Space => {
+                input.select = false;
+            }
+            event::Keycode::Escape => {
+                input.cancel = false;
+            }
+            _ => {}
+        }
     }
 }
