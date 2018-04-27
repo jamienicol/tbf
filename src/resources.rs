@@ -4,37 +4,21 @@ use std::path::PathBuf;
 use std::string::String;
 
 use gfx;
+use ggez::graphics::Image;
 use specs::Entity;
 use tiled;
 
 use two;
 
-pub struct Assets<R>
-where
-    R: gfx::Resources,
-{
-    pub images: HashMap<String, two::Texture<R>>,
+pub struct Assets {
+    pub images: HashMap<String, Image>,
 }
 
-impl<R> Assets<R>
-where
-    R: gfx::Resources,
-{
+impl Assets {
     pub fn new() -> Self {
         Self {
             images: HashMap::new(),
         }
-    }
-
-    pub fn load_image<F>(&mut self, factory: &mut F, path: &str, name: String)
-    where
-        F: gfx::Factory<R>,
-    {
-        let mut full_path = PathBuf::from("resources");
-        full_path.push(&path);
-        let texture = two::Texture::new(factory, &full_path);
-
-        self.images.insert(name, texture);
     }
 }
 

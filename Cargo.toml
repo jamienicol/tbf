@@ -8,9 +8,6 @@ cgmath = "0.16"
 fps_counter = "1.0"
 gfx = "0.17"
 gfx_device_gl = "0.15"
-gfx_window_glutin = "0.22"
-ggez = "0.4"
-glutin = "0.14"
 image = "0.18"
 specs = "0.10"
 specs-derive = "0.1"
@@ -18,4 +15,8 @@ tiled = "0.7"
 
 [dependencies.conrod]
 version = "0.59"
-features = ["gfx_rs", "winit"]
+features = ["gfx_rs"]
+
+[dependencies.ggez]
+version = "0.4"
+features = ["cargo-resource-root"]

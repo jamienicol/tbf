@@ -163,7 +163,6 @@ fn calculate_run_targets<'a>(
     players: &ReadStorage<'a, Player>,
     tile_positions: &ReadStorage<'a, TilePosition>,
 ) -> Vec<Point2<u32>> {
-
     let mut potential_targets = Vec::with_capacity(4);
 
     // TODO make this based on actual pathfinding rather than just manhattan distance
@@ -188,9 +187,14 @@ fn calculate_run_targets<'a>(
         }
     }
 
-    potential_targets.into_iter()
-        .filter(|target|
-            (players, tile_positions).join().find(|(_, pos)| pos.pos == *target).is_none())
+    potential_targets
+        .into_iter()
+        .filter(|target| {
+            (players, tile_positions)
+                .join()
+                .find(|(_, pos)| pos.pos == *target)
+                .is_none()
+        })
         .collect()
 }
 
