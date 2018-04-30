@@ -2,7 +2,6 @@ extern crate cgmath;
 #[macro_use]
 extern crate conrod;
 extern crate fps_counter;
-#[macro_use]
 extern crate gfx;
 extern crate gfx_device_gl;
 extern crate ggez;
@@ -17,7 +16,6 @@ mod game;
 mod render;
 mod resources;
 mod systems;
-mod two;
 
 use ggez::conf::Conf;
 use ggez::{event, graphics, Context};
@@ -31,16 +29,12 @@ fn main() {
     c.window_mode.height = 800;
     let ctx = &mut Context::load_from_conf("tbf", "Jamie Nicol", c).unwrap();
 
-    let (sprite_renderer, ui_renderer) = {
+    let ui_renderer = {
         let (factory, _device, _encoder, _dtv, rtv) = graphics::get_gfx_objects(ctx);
 
-        let sprite_renderer = two::Renderer::new(factory);
-        let mut ui_renderer =
-            conrod::backend::gfx::Renderer::new(factory, &rtv, f64::from(1.0)).unwrap();
-
-        (sprite_renderer, ui_renderer)
+        conrod::backend::gfx::Renderer::new(factory, &rtv, f64::from(1.0)).unwrap()
     };
 
-    let game = &mut Game2::new(ctx, sprite_renderer, ui_renderer).unwrap();
+    let game = &mut Game2::new(ctx, ui_renderer).unwrap();
     event::run(ctx, game).unwrap();
 }

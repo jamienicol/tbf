@@ -4,7 +4,7 @@ use cgmath::Point2;
 use conrod::{self, Colorable, Positionable, Widget};
 use fps_counter::FPSCounter;
 use gfx;
-use gfx::handle::{RenderTargetView, ShaderResourceView};
+use gfx::handle::ShaderResourceView;
 use gfx_device_gl;
 use ggez::{event, graphics, timer, Context, GameResult};
 use specs::{RunNow, World};
@@ -16,7 +16,6 @@ use render::RenderSystem;
 use resources::{Assets, DeltaTime, Input, Map, Turn, TurnState};
 use systems::{ActionMenuSystem, CursorMovementSystem, PathSelectSystem, PlayerMovementSystem,
               PlayerSelectSystem, RunSelectSystem};
-use two;
 
 widget_ids!(pub struct WidgetIds {
     fps,
@@ -195,14 +194,12 @@ where
 
 pub struct Game2<'a> {
     game: Game<gfx_device_gl::Resources>,
-    sprite_renderer: two::Renderer<gfx_device_gl::Resources>,
     ui_renderer: conrod::backend::gfx::Renderer<'a, gfx_device_gl::Resources>,
 }
 
 impl<'a> Game2<'a> {
     pub fn new(
         ctx: &mut Context,
-        sprite_renderer: two::Renderer<gfx_device_gl::Resources>,
         ui_renderer: conrod::backend::gfx::Renderer<'a, gfx_device_gl::Resources>,
     ) -> GameResult<Self> {
         let mut game = Game::new();
@@ -232,11 +229,7 @@ impl<'a> Game2<'a> {
         game.world.add_resource(assets);
         game.world.add_resource(Map { map });
 
-        let s = Self {
-            game,
-            sprite_renderer,
-            ui_renderer,
-        };
+        let s = Self { game, ui_renderer };
         Ok(s)
     }
 }
@@ -257,7 +250,7 @@ impl<'a> event::EventHandler for Game2<'a> {
         }
 
         {
-            let (factory, _device, encoder, _dtv, rtv) = graphics::get_gfx_objects(ctx);
+            let (factory, _device, encoder, _dtv, _rtv) = graphics::get_gfx_objects(ctx);
 
             let primitives = self.game.ui.draw();
             self.ui_renderer.fill(

@@ -1,14 +1,10 @@
 use std::collections::HashMap;
 use std::default::Default;
-use std::path::PathBuf;
 use std::string::String;
 
-use gfx;
 use ggez::graphics::Image;
 use specs::Entity;
 use tiled;
-
-use two;
 
 pub struct Assets {
     pub images: HashMap<String, Image>,
