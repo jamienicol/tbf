@@ -37,12 +37,19 @@ pub struct Game<'a> {
     ui_renderer: conrod::backend::gfx::Renderer<'a, gfx_device_gl::Resources>,
     ui: conrod::Ui,
     widget_ids: WidgetIds,
-    ui_image_map: conrod::image::Map<(ShaderResourceView<gfx_device_gl::Resources, [f32; 4]>, (u32, u32))>,
+    ui_image_map: conrod::image::Map<
+        (
+            ShaderResourceView<gfx_device_gl::Resources, [f32; 4]>,
+            (u32, u32),
+        ),
+    >,
 }
 
 impl<'a> Game<'a> {
-    pub fn new(ctx: &mut Context,
-               ui_renderer: conrod::backend::gfx::Renderer<'a, gfx_device_gl::Resources>) -> GameResult<Self> {
+    pub fn new(
+        ctx: &mut Context,
+        ui_renderer: conrod::backend::gfx::Renderer<'a, gfx_device_gl::Resources>,
+    ) -> GameResult<Self> {
         let mut assets = Assets::new();
 
         let cursor_image = graphics::Image::new(ctx, "/cursor.png").unwrap();
@@ -228,14 +235,9 @@ impl<'a> event::EventHandler for Game<'a> {
             let (factory, _device, encoder, _dtv, _rtv) = graphics::get_gfx_objects(ctx);
 
             let primitives = self.ui.draw();
-            self.ui_renderer.fill(
-                encoder,
-                (1280.0, 800.0),
-                primitives,
-                &self.ui_image_map,
-            );
             self.ui_renderer
-                .draw(factory, encoder, &self.ui_image_map);
+                .fill(encoder, (1280.0, 800.0), primitives, &self.ui_image_map);
+            self.ui_renderer.draw(factory, encoder, &self.ui_image_map);
         }
 
         graphics::present(ctx);

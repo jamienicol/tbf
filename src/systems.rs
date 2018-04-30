@@ -204,6 +204,7 @@ fn calculate_run_targets<'a>(
 
     while let Some(next) = to_search.pop() {
         let new_distance = searched[&next] + 1; // TODO change 1 to tile cost
+
         // if the distance is too far stop searching.
         // but don't rule it out if we find this tile through a shorter path.
         if new_distance > max_distance {
@@ -211,7 +212,10 @@ fn calculate_run_targets<'a>(
         }
 
         // if the tile is already occupied then rule it out
-        let occupied = (players, tile_positions).join().find(|&(_, pos)| pos.pos == next).is_some();
+        let occupied = (players, tile_positions)
+            .join()
+            .find(|&(_, pos)| pos.pos == next)
+            .is_some();
         if occupied && next != *start_pos {
             continue;
         }
