@@ -223,7 +223,8 @@ fn calculate_run_targets<'a>(
 
         // queue adjacent tiles to be searched
         for tile in get_adjacent_tiles(&next, &Vector2::new(map.map.width, map.map.height)) {
-            let should_search = !searched.contains_key(&tile) || (searched.contains_key(&tile) && new_distance < searched[&tile]);
+            let should_search = !searched.contains_key(&tile)
+                || (searched.contains_key(&tile) && new_distance < searched[&tile]);
             if should_search {
                 searched.insert(tile, new_distance);
                 to_search.push(tile);
@@ -322,21 +323,20 @@ impl<'a> System<'a> for RunSelectSystem {
         if let TurnState::SelectRun { player: player_ent } = turn.state {
             // Find the player
             let player = players.get_mut(player_ent).unwrap();
-            let player_pos = tile_positions.get(player_ent).unwrap();
-
-            // FIXME: find a way to avoid this clone
-            let move_dests = can_moves.get(player_ent).unwrap().dests.clone();
 
             for (cursor, cursor_pos) in (&cursors, &tile_positions).join() {
                 if input.select {
-                    if cursor.state == CursorState::Still && cursor_pos.pos != player_pos.pos
-                        && move_dests.contains(&cursor_pos.pos)
-                    {
-                        turn.state = TurnState::Running { player: player_ent };
-                        player.state = PlayerState::Running {
-                            path: can_moves.get(player_ent).unwrap().path.clone(),
+                    if cursor.state == CursorState::Still {
+                        let at_end_of_path = {
+                            can_moves.get(player_ent).unwrap().path.last() == Some(&cursor_pos.pos)
                         };
-                        can_moves.remove(player_ent).unwrap();
+                        if at_end_of_path {
+                            turn.state = TurnState::Running { player: player_ent };
+                            player.state = PlayerState::Running {
+                                path: can_moves.get(player_ent).unwrap().path.clone(),
+                            };
+                            can_moves.remove(player_ent).unwrap();
+                        }
                     }
                 } else if input.cancel {
                     can_moves.remove(player_ent).unwrap();
@@ -351,13 +351,14 @@ pub struct PathSelectSystem;
 
 impl<'a> System<'a> for PathSelectSystem {
     type SystemData = (
+        Fetch<'a, Map>,
         ReadStorage<'a, Cursor>,
         ReadStorage<'a, TilePosition>,
         WriteStorage<'a, CanMove>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
-        let (cursors, tile_positions, mut can_moves) = data;
+        let (map, cursors, tile_positions, mut can_moves) = data;
 
         for (_cursor, cursor_pos) in (&cursors, &tile_positions).join() {
             for (can_move,) in (&mut can_moves,).join() {
@@ -373,9 +374,16 @@ impl<'a> System<'a> for PathSelectSystem {
                         {
                             can_move.path.truncate(i + 1);
                         } else {
-                            // Otherwise, check our path isn't too long
-                            if can_move.path.len() <= can_move.distance as usize {
-                                can_move.path.push(cursor_pos.pos.clone());
+                            // Check we've only moved by 1 tile
+                            if get_adjacent_tiles(
+                                can_move.path.last().unwrap_or(&can_move.start),
+                                &Vector2::new(map.map.width, map.map.height),
+                            ).contains(&cursor_pos.pos)
+                            {
+                                // Check our path isn't too long
+                                if can_move.path.len() <= can_move.distance as usize {
+                                    can_move.path.push(cursor_pos.pos.clone());
+                                }
                             }
                         }
                     }
