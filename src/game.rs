@@ -3,7 +3,6 @@ use std::path::Path;
 use cgmath::Point2;
 use conrod::{self, Colorable, Positionable, Widget};
 use fps_counter::FPSCounter;
-use gfx;
 use gfx::handle::ShaderResourceView;
 use gfx_device_gl;
 use ggez::{event, graphics, timer, Context, GameResult};
@@ -25,10 +24,7 @@ widget_ids!(pub struct WidgetIds {
     action_menu_cancel,
 });
 
-pub struct Game<R>
-where
-    R: gfx::Resources,
-{
+pub struct Game<'a> {
     world: World,
     cursor_movement_system: CursorMovementSystem,
     player_select_system: PlayerSelectSystem,
@@ -38,16 +34,37 @@ where
 
     fps_counter: FPSCounter,
 
+    ui_renderer: conrod::backend::gfx::Renderer<'a, gfx_device_gl::Resources>,
     ui: conrod::Ui,
     widget_ids: WidgetIds,
-    ui_image_map: conrod::image::Map<(ShaderResourceView<R, [f32; 4]>, (u32, u32))>,
+    ui_image_map: conrod::image::Map<(ShaderResourceView<gfx_device_gl::Resources, [f32; 4]>, (u32, u32))>,
 }
 
-impl<R> Game<R>
-where
-    R: gfx::Resources,
-{
-    pub fn new() -> Self {
+impl<'a> Game<'a> {
+    pub fn new(ctx: &mut Context,
+               ui_renderer: conrod::backend::gfx::Renderer<'a, gfx_device_gl::Resources>) -> GameResult<Self> {
+        let mut assets = Assets::new();
+
+        let cursor_image = graphics::Image::new(ctx, "/cursor.png").unwrap();
+        assets.images.insert("cursor".to_string(), cursor_image);
+        let player_image = graphics::Image::new(ctx, "/player.png").unwrap();
+        assets.images.insert("player".to_string(), player_image);
+        let highlight_image = graphics::Image::new(ctx, "/highlight.png").unwrap();
+        assets
+            .images
+            .insert("highlight".to_string(), highlight_image);
+        let path_image = graphics::Image::new(ctx, "/path.png").unwrap();
+        assets.images.insert("path".to_string(), path_image);
+
+        // Load map
+        let map =
+            tiled::parse_file(Path::new("resources/pitch.tmx")).expect("Failed to parse map.");
+        for tileset in &map.tilesets {
+            let tileset_image =
+                graphics::Image::new(ctx, format!("/{}", &tileset.images[0].source)).unwrap();
+            assets.images.insert(tileset.name.clone(), tileset_image);
+        }
+
         let mut world = World::new();
         world.register::<CanMove>();
         world.register::<Player>();
@@ -57,6 +74,8 @@ where
         world.register::<Sprite>();
         world.register::<Cursor>();
 
+        world.add_resource(assets);
+        world.add_resource(Map { map });
         world.add_resource(DeltaTime { dt: 0.0 });
         world.add_resource(Input::default());
 
@@ -129,7 +148,7 @@ where
         const FONT_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/resources/DejaVuSans.ttf");
         ui.fonts.insert_from_file(FONT_PATH).unwrap();
 
-        Self {
+        Ok(Self {
             world,
             cursor_movement_system: CursorMovementSystem,
             player_select_system: PlayerSelectSystem,
@@ -139,14 +158,18 @@ where
 
             fps_counter,
 
+            ui_renderer,
             ui,
             widget_ids,
             ui_image_map,
-        }
+        })
     }
+}
 
-    pub fn update(&mut self, dt: f32) {
-        self.world.write_resource::<DeltaTime>().dt = dt;
+impl<'a> event::EventHandler for Game<'a> {
+    fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+        let dt = timer::duration_to_f64(timer::get_delta(ctx));
+        self.world.write_resource::<DeltaTime>().dt = dt as f32;
 
         let ui = &mut self.ui.set_widgets();
 
@@ -189,55 +212,7 @@ where
         let mut input = self.world.write_resource::<Input>();
         input.select = false;
         input.cancel = false;
-    }
-}
 
-pub struct Game2<'a> {
-    game: Game<gfx_device_gl::Resources>,
-    ui_renderer: conrod::backend::gfx::Renderer<'a, gfx_device_gl::Resources>,
-}
-
-impl<'a> Game2<'a> {
-    pub fn new(
-        ctx: &mut Context,
-        ui_renderer: conrod::backend::gfx::Renderer<'a, gfx_device_gl::Resources>,
-    ) -> GameResult<Self> {
-        let mut game = Game::new();
-
-        let mut assets = Assets::new();
-
-        let cursor_image = graphics::Image::new(ctx, "/cursor.png").unwrap();
-        assets.images.insert("cursor".to_string(), cursor_image);
-        let player_image = graphics::Image::new(ctx, "/player.png").unwrap();
-        assets.images.insert("player".to_string(), player_image);
-        let highlight_image = graphics::Image::new(ctx, "/highlight.png").unwrap();
-        assets
-            .images
-            .insert("highlight".to_string(), highlight_image);
-        let path_image = graphics::Image::new(ctx, "/path.png").unwrap();
-        assets.images.insert("path".to_string(), path_image);
-
-        // Load map
-        let map =
-            tiled::parse_file(Path::new("resources/pitch.tmx")).expect("Failed to parse map.");
-        for tileset in &map.tilesets {
-            let tileset_image =
-                graphics::Image::new(ctx, format!("/{}", &tileset.images[0].source)).unwrap();
-            assets.images.insert(tileset.name.clone(), tileset_image);
-        }
-
-        game.world.add_resource(assets);
-        game.world.add_resource(Map { map });
-
-        let s = Self { game, ui_renderer };
-        Ok(s)
-    }
-}
-
-impl<'a> event::EventHandler for Game2<'a> {
-    fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
-        let dt = timer::duration_to_f64(timer::get_delta(ctx));
-        self.game.update(dt as f32);
         Ok(())
     }
 
@@ -246,21 +221,21 @@ impl<'a> event::EventHandler for Game2<'a> {
 
         {
             let mut rs = RenderSystem::new(ctx);
-            rs.run_now(&self.game.world.res);
+            rs.run_now(&self.world.res);
         }
 
         {
             let (factory, _device, encoder, _dtv, _rtv) = graphics::get_gfx_objects(ctx);
 
-            let primitives = self.game.ui.draw();
+            let primitives = self.ui.draw();
             self.ui_renderer.fill(
                 encoder,
                 (1280.0, 800.0),
                 primitives,
-                &self.game.ui_image_map,
+                &self.ui_image_map,
             );
             self.ui_renderer
-                .draw(factory, encoder, &self.game.ui_image_map);
+                .draw(factory, encoder, &self.ui_image_map);
         }
 
         graphics::present(ctx);
@@ -274,7 +249,7 @@ impl<'a> event::EventHandler for Game2<'a> {
         _keymod: event::Mod,
         _repeat: bool,
     ) {
-        let mut input = self.game.world.write_resource::<Input>();
+        let mut input = self.world.write_resource::<Input>();
 
         match keycode {
             event::Keycode::Left => {
@@ -306,7 +281,7 @@ impl<'a> event::EventHandler for Game2<'a> {
         _keymod: event::Mod,
         _repeat: bool,
     ) {
-        let mut input = self.game.world.write_resource::<Input>();
+        let mut input = self.world.write_resource::<Input>();
 
         match keycode {
             event::Keycode::Left => {

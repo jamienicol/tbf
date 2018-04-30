@@ -20,7 +20,7 @@ mod systems;
 use ggez::conf::Conf;
 use ggez::{event, graphics, Context};
 
-use game::Game2;
+use game::Game;
 
 fn main() {
     let mut c = Conf::new();
@@ -35,6 +35,6 @@ fn main() {
         conrod::backend::gfx::Renderer::new(factory, &rtv, f64::from(1.0)).unwrap()
     };
 
-    let game = &mut Game2::new(ctx, ui_renderer).unwrap();
+    let game = &mut Game::new(ctx, ui_renderer).unwrap();
     event::run(ctx, game).unwrap();
 }
