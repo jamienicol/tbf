@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use cgmath::{InnerSpace, Point2, Vector2};
 use conrod::{self, Labelable, Positionable, Sizeable, Widget};
 use specs::{Entities, Fetch, FetchMut, Join, ReadStorage, System, WriteStorage};
@@ -156,6 +158,24 @@ impl<'a> System<'a> for PlayerSelectSystem {
     }
 }
 
+fn get_adjacent_tiles(tile_pos: &Point2<u32>, map_size: &Vector2<u32>) -> Vec<Point2<u32>> {
+    let mut tiles = Vec::new();
+    if tile_pos.x >= 1 {
+        tiles.push(Point2::new(tile_pos.x - 1, tile_pos.y));
+    }
+    if tile_pos.x < map_size.x - 1 {
+        tiles.push(Point2::new(tile_pos.x + 1, tile_pos.y));
+    }
+    if tile_pos.y >= 1 {
+        tiles.push(Point2::new(tile_pos.x, tile_pos.y - 1));
+    }
+    if tile_pos.y < map_size.y - 1 {
+        tiles.push(Point2::new(tile_pos.x, tile_pos.y + 1));
+    }
+
+    tiles
+}
+
 fn calculate_run_targets<'a>(
     start_pos: &Point2<u32>,
     map: &Map,
@@ -163,39 +183,55 @@ fn calculate_run_targets<'a>(
     players: &ReadStorage<'a, Player>,
     tile_positions: &ReadStorage<'a, TilePosition>,
 ) -> Vec<Point2<u32>> {
-    let mut potential_targets = Vec::with_capacity(4);
+    // targets that we can run to
+    let mut targets: Vec<Point2<u32>> = Vec::new();
+    targets.push(start_pos.clone());
 
-    // TODO make this based on actual pathfinding rather than just manhattan distance
-    for x in 0..max_distance + 1 {
-        for y in 0..max_distance - x + 1 {
-            if start_pos.x >= x {
-                if start_pos.y >= y {
-                    potential_targets.push(Point2::new(start_pos.x - x, start_pos.y - y));
-                }
-                if y != 0 && start_pos.y < map.map.height - y {
-                    potential_targets.push(Point2::new(start_pos.x - x, start_pos.y + y));
-                }
-            }
-            if x != 0 && start_pos.x < map.map.width - x {
-                if start_pos.y >= y {
-                    potential_targets.push(Point2::new(start_pos.x + x, start_pos.y - y));
-                }
-                if y != 0 && start_pos.y < map.map.height - y {
-                    potential_targets.push(Point2::new(start_pos.x + x, start_pos.y + y));
-                }
+    // tiles that still need to be searched. start with those adjacent to the start.
+    let mut to_search: Vec<Point2<u32>> =
+        get_adjacent_tiles(start_pos, &Vector2::new(map.map.width, map.map.height));
+
+    // tiles that are just about to be or have already been searched,
+    // and their cost for the path to the tile (but not including itself).
+    // if the same tile is encountered with a lower cost then it should be searched again.
+    let mut searched: HashMap<Point2<u32>, u32> = HashMap::new();
+
+    // set the cost for the first tiles to 0
+    searched.insert(*start_pos, 0);
+    for tile in &to_search {
+        searched.insert(*tile, 0);
+    }
+
+    while let Some(next) = to_search.pop() {
+        let new_distance = searched[&next] + 1; // TODO change 1 to tile cost
+        // if the distance is too far stop searching.
+        // but don't rule it out if we find this tile through a shorter path.
+        if new_distance > max_distance {
+            continue;
+        }
+
+        // if the tile is already occupied then rule it out
+        let occupied = (players, tile_positions).join().find(|&(_, pos)| pos.pos == next).is_some();
+        if occupied && next != *start_pos {
+            continue;
+        }
+
+        // tile looks good
+        if !targets.contains(&next) {
+            targets.push(next);
+        }
+
+        // queue adjacent tiles to be searched
+        for tile in get_adjacent_tiles(&next, &Vector2::new(map.map.width, map.map.height)) {
+            let should_search = !searched.contains_key(&tile) || (searched.contains_key(&tile) && new_distance < searched[&tile]);
+            if should_search {
+                searched.insert(tile, new_distance);
+                to_search.push(tile);
             }
         }
     }
 
-    potential_targets
-        .into_iter()
-        .filter(|target| {
-            (players, tile_positions)
-                .join()
-                .find(|&(_, pos)| pos.pos == *target)
-                .is_none()
-        })
-        .collect()
+    targets
 }
 
 pub struct ActionMenuSystem<'a, 'b>
