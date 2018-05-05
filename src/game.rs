@@ -9,7 +9,7 @@ use ggez::{event, graphics, timer, Context, GameResult};
 use specs::{RunNow, World};
 use tiled;
 
-use components::{CanMove, Cursor, CursorState, Player, PlayerState, Size, Sprite, SubTilePosition,
+use components::{Ball, CanMove, Cursor, CursorState, Player, PlayerState, Size, Sprite, SubTilePosition,
                  TilePosition};
 use render::RenderSystem;
 use resources::{Assets, DeltaTime, Input, Map, Turn, TurnState};
@@ -62,6 +62,8 @@ impl<'a> Game<'a> {
             .insert("highlight".to_string(), highlight_image);
         let path_image = graphics::Image::new(ctx, "/path.png").unwrap();
         assets.images.insert("path".to_string(), path_image);
+        let ball_image = graphics::Image::new(ctx, "/ball.png").unwrap();
+        assets.images.insert("ball".to_string(), ball_image);
 
         // Load map
         let map =
@@ -73,6 +75,7 @@ impl<'a> Game<'a> {
         }
 
         let mut world = World::new();
+        world.register::<Ball>();
         world.register::<CanMove>();
         world.register::<Player>();
         world.register::<TilePosition>();
@@ -144,6 +147,24 @@ impl<'a> Game<'a> {
                 height: 64.0,
             })
             .with(Sprite { image_id: "player" })
+            .build();
+
+        // Create the ball
+        world
+            .create_entity()
+            .with(Ball {
+            })
+            .with(TilePosition {
+                pos: Point2::new(2, 4),
+            })
+            .with(SubTilePosition {
+                pos: Point2::new(128.0, 256.0),
+            })
+            .with(Size {
+                width: 64.0,
+                height: 64.0,
+            })
+            .with(Sprite { image_id: "ball" })
             .build();
 
         let fps_counter = FPSCounter::new();

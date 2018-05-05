@@ -60,3 +60,7 @@ pub struct CanMove {
     pub dests: Vec<Point2<u32>>,
     pub path: Vec<Point2<u32>>,
 }
+
+#[derive(Component)]
+pub struct Ball {
+}
