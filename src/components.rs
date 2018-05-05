@@ -65,7 +65,13 @@ pub struct CanMove {
 #[derive(PartialEq)]
 pub enum BallState {
     Free,
-    Possessed(Entity),
+    Possessed {
+        player_id: Entity,
+    },
+    Moving {
+        player_id: Entity,
+        path: Vec<Point2<u32>>,
+    },
 }
 
 #[derive(Component)]

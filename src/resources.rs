@@ -53,20 +53,11 @@ pub struct Map {
 #[derive(Debug, Clone)]
 pub enum TurnState {
     SelectPlayer,
-    ActionMenu {
-        player_id: Entity,
-    },
-    SelectRun {
-        player_id: Entity,
-    },
-    Running {
-        player_id: Entity,
-    },
-    SelectPass {
-        player_id: Entity,
-        ball_id: Entity,
-    },
-    // Passing { player: Entity, dest: Point2<f32> },
+    ActionMenu { player_id: Entity },
+    SelectRun { player_id: Entity },
+    Running { player_id: Entity },
+    SelectPass { player_id: Entity, ball_id: Entity },
+    Passing { player_id: Entity, ball_id: Entity },
 }
 
 pub struct Turn {

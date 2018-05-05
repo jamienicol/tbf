@@ -328,20 +328,28 @@ impl<'a, 'b, 'c> System<'c> for ActionMenuSystem<'a, 'b> {
                 .was_clicked()
             {
                 for (ball_id, ball) in (&*entities, &balls).join() {
-                    if ball.state == BallState::Possessed(player_id) {
-                        let ball_pos = tile_positions.get(ball_id).unwrap().clone();
-                        let dests = calculate_pass_targets(&ball_pos.pos, &map, BALL_PASS_DISTANCE);
-                        let can_move = CanMove {
-                            start: ball_pos.pos,
-                            distance: BALL_PASS_DISTANCE,
-                            dests: dests,
-                            path: Vec::new(),
-                        };
-                        can_moves.insert(ball_id, can_move);
-                        turn.state = TurnState::SelectPass { player_id, ball_id };
+                    // Why can't I do this?
+                    // if ball.state == BallState::Possessed { player_id }
+                    if let BallState::Possessed {
+                        player_id: possessed_by,
+                    } = ball.state
+                    {
+                        if player_id == possessed_by {
+                            let ball_pos = tile_positions.get(ball_id).unwrap().clone();
+                            let dests =
+                                calculate_pass_targets(&ball_pos.pos, &map, BALL_PASS_DISTANCE);
+                            let can_move = CanMove {
+                                start: ball_pos.pos,
+                                distance: BALL_PASS_DISTANCE,
+                                dests: dests,
+                                path: Vec::new(),
+                            };
+                            can_moves.insert(ball_id, can_move);
+                            turn.state = TurnState::SelectPass { player_id, ball_id };
 
-                        // Can't pass more than one ball
-                        break;
+                            // Can't pass more than one ball
+                            break;
+                        }
                     }
                 }
             }
@@ -535,16 +543,60 @@ impl<'a> System<'a> for BallDribbleSystem {
                     for (player_id, _) in (&*entities, &players).join() {
                         let player_pos = tile_positions.get(player_id).unwrap();
                         if ball_pos.pos == player_pos.pos {
-                            ball.state = BallState::Possessed(player_id);
+                            ball.state = BallState::Possessed { player_id };
                         }
                     }
                 }
-                BallState::Possessed(player_id) => {
+                BallState::Possessed { player_id } => {
                     let player_tile_pos = tile_positions.get(player_id).unwrap().pos.clone();
                     let player_subtile_pos = sub_tile_positions.get(player_id).unwrap().pos.clone();
 
                     tile_positions.get_mut(ball_id).unwrap().pos = player_tile_pos;
                     sub_tile_positions.get_mut(ball_id).unwrap().pos = player_subtile_pos;
+                }
+                _ => {}
+            }
+        }
+    }
+}
+
+pub struct PassSelectSystem;
+
+impl<'a> System<'a> for PassSelectSystem {
+    type SystemData = (
+        Fetch<'a, Input>,
+        FetchMut<'a, Turn>,
+        WriteStorage<'a, CanMove>,
+        ReadStorage<'a, Cursor>,
+        ReadStorage<'a, TilePosition>,
+        WriteStorage<'a, Ball>,
+    );
+
+    fn run(&mut self, data: Self::SystemData) {
+        let (input, mut turn, mut can_moves, cursors, tile_positions, mut balls) = data;
+
+        if let TurnState::SelectPass { player_id, ball_id } = turn.state {
+            // Find the ball
+            let ball = balls.get_mut(ball_id).unwrap();
+
+            for (cursor, cursor_pos) in (&cursors, &tile_positions).join() {
+                if input.select {
+                    if cursor.state == CursorState::Still {
+                        let at_end_of_path = {
+                            can_moves.get(ball_id).unwrap().path.last() == Some(&cursor_pos.pos)
+                        };
+                        if at_end_of_path {
+                            turn.state = TurnState::Passing { player_id, ball_id };
+                            ball.state = BallState::Moving {
+                                player_id,
+                                path: can_moves.get(ball_id).unwrap().path.clone(),
+                            };
+                            can_moves.remove(ball_id).unwrap();
+                        }
+                    }
+                } else if input.cancel {
+                    can_moves.remove(ball_id).unwrap();
+                    turn.state = TurnState::SelectPlayer;
                 }
             }
         }
