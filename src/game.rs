@@ -11,6 +11,7 @@ use tiled;
 
 use components::{Ball, BallState, CanMove, Cursor, CursorState, Player, PlayerState, Size, Sprite,
                  SubTilePosition, TilePosition};
+use ggez2conrod;
 use render::RenderSystem;
 use resources::{Assets, DeltaTime, Input, Map, Turn, TurnState};
 use systems::{ActionMenuSystem, BallDribbleSystem, BallMovementSystem, CursorMovementSystem,
@@ -343,6 +344,50 @@ impl<'a> event::EventHandler for Game<'a> {
                 input.cancel = false;
             }
             _ => {}
+        }
+    }
+
+    fn mouse_motion_event(
+        &mut self,
+        ctx: &mut Context,
+        state: event::MouseState,
+        x: i32,
+        y: i32,
+        xrel: i32,
+        yrel: i32,
+    ) {
+        let input = ggez2conrod::convert_mouse_motion_event(ctx, state, x, y, xrel, yrel);
+
+        if let Some(input) = input {
+            self.ui.handle_event(input);
+        }
+    }
+
+    fn mouse_button_down_event(
+        &mut self,
+        ctx: &mut Context,
+        button: event::MouseButton,
+        x: i32,
+        y: i32,
+    ) {
+        let input = ggez2conrod::convert_mouse_button_down_event(ctx, button, x, y);
+
+        if let Some(input) = input {
+            self.ui.handle_event(input);
+        }
+    }
+
+    fn mouse_button_up_event(
+        &mut self,
+        ctx: &mut Context,
+        button: event::MouseButton,
+        x: i32,
+        y: i32,
+    ) {
+        let input = ggez2conrod::convert_mouse_button_up_event(ctx, button, x, y);
+
+        if let Some(input) = input {
+            self.ui.handle_event(input);
         }
     }
 }

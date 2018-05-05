@@ -13,6 +13,7 @@ extern crate tiled;
 
 mod components;
 mod game;
+mod ggez2conrod;
 mod render;
 mod resources;
 mod systems;
