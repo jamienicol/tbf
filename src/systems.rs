@@ -12,7 +12,8 @@ use resources::{DeltaTime, Input, Map, Turn, TurnState};
 const CURSOR_SPEED: f32 = 320.0;
 const PLAYER_SPEED: f32 = 640.0;
 const TILE_SIZE: u32 = 64;
-const PLAYER_MOVE_DISTANCE: u32 = 8;
+const PLAYER_MOVE_DISTANCE: u32 = 4;
+const BALL_PASS_DISTANCE: u32 = 8;
 
 fn tile_to_subtile(tile_pos: &Point2<u32>) -> Point2<f32> {
     Point2::new(
@@ -147,9 +148,9 @@ impl<'a> System<'a> for PlayerSelectSystem {
 
         for (_, cursor_pos) in (&cursors, &tile_positions).join() {
             if input.select {
-                for (entity, _, player_pos) in (&*entities, &players, &tile_positions).join() {
+                for (player_id, _, player_pos) in (&*entities, &players, &tile_positions).join() {
                     if player_pos.pos == cursor_pos.pos {
-                        turn.state = TurnState::ActionMenu { player: entity };
+                        turn.state = TurnState::ActionMenu { player_id };
                         break;
                     }
                 }
@@ -239,6 +240,31 @@ fn calculate_run_targets<'a>(
     targets
 }
 
+fn calculate_pass_targets(
+    start_pos: &Point2<u32>,
+    map: &Map,
+    max_distance: u32,
+) -> Vec<Point2<u32>> {
+    let mut targets: Vec<Point2<u32>> = Vec::new();
+
+    for i in 1..max_distance {
+        if start_pos.x >= i {
+            targets.push(Point2::new(start_pos.x - i, start_pos.y));
+        }
+        if start_pos.x + i < map.map.width {
+            targets.push(Point2::new(start_pos.x + i, start_pos.y));
+        }
+        if start_pos.y >= i {
+            targets.push(Point2::new(start_pos.x, start_pos.y - i));
+        }
+        if start_pos.y + i < map.map.height {
+            targets.push(Point2::new(start_pos.x, start_pos.y + i));
+        }
+    }
+
+    targets
+}
+
 pub struct ActionMenuSystem<'a, 'b>
 where
     'b: 'a,
@@ -255,18 +281,20 @@ impl<'a, 'b> ActionMenuSystem<'a, 'b> {
 
 impl<'a, 'b, 'c> System<'c> for ActionMenuSystem<'a, 'b> {
     type SystemData = (
+        Entities<'c>,
         FetchMut<'c, Turn>,
         Fetch<'c, Input>,
         Fetch<'c, Map>,
         ReadStorage<'c, Player>,
+        ReadStorage<'c, Ball>,
         ReadStorage<'c, TilePosition>,
         WriteStorage<'c, CanMove>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
-        let (mut turn, input, map, players, tile_positions, mut can_moves) = data;
+        let (entities, mut turn, input, map, players, balls, tile_positions, mut can_moves) = data;
 
-        if let TurnState::ActionMenu { player } = turn.state {
+        if let TurnState::ActionMenu { player_id } = turn.state {
             if conrod::widget::Button::new()
                 .label("Run")
                 .top_right_with_margin_on(self.ui.window, 16.0)
@@ -274,7 +302,7 @@ impl<'a, 'b, 'c> System<'c> for ActionMenuSystem<'a, 'b> {
                 .set(self.widget_ids.action_menu_run, self.ui)
                 .was_clicked() || input.select
             {
-                let player_pos = tile_positions.get(player).unwrap().clone();
+                let player_pos = tile_positions.get(player_id).unwrap().clone();
                 let dests = calculate_run_targets(
                     &player_pos.pos,
                     &map,
@@ -288,14 +316,36 @@ impl<'a, 'b, 'c> System<'c> for ActionMenuSystem<'a, 'b> {
                     dests: dests,
                     path: Vec::new(),
                 };
-                can_moves.insert(player, can_move);
-                turn.state = TurnState::SelectRun { player };
+                can_moves.insert(player_id, can_move);
+                turn.state = TurnState::SelectRun { player_id };
             }
-            conrod::widget::Button::new()
+
+            if conrod::widget::Button::new()
                 .label("Pass")
                 .down_from(self.widget_ids.action_menu_run, 16.0)
                 .w_h(160.0, 32.0)
-                .set(self.widget_ids.action_menu_pass, self.ui);
+                .set(self.widget_ids.action_menu_pass, self.ui)
+                .was_clicked()
+            {
+                for (ball_id, ball) in (&*entities, &balls).join() {
+                    if ball.state == BallState::Possessed(player_id) {
+                        let ball_pos = tile_positions.get(ball_id).unwrap().clone();
+                        let dests = calculate_pass_targets(&ball_pos.pos, &map, BALL_PASS_DISTANCE);
+                        let can_move = CanMove {
+                            start: ball_pos.pos,
+                            distance: BALL_PASS_DISTANCE,
+                            dests: dests,
+                            path: Vec::new(),
+                        };
+                        can_moves.insert(ball_id, can_move);
+                        turn.state = TurnState::SelectPass { player_id, ball_id };
+
+                        // Can't pass more than one ball
+                        break;
+                    }
+                }
+            }
+
             if conrod::widget::Button::new()
                 .label("Cancel")
                 .down_from(self.widget_ids.action_menu_pass, 16.0)
@@ -324,26 +374,26 @@ impl<'a> System<'a> for RunSelectSystem {
     fn run(&mut self, data: Self::SystemData) {
         let (input, mut turn, mut can_moves, cursors, tile_positions, mut players) = data;
 
-        if let TurnState::SelectRun { player: player_ent } = turn.state {
+        if let TurnState::SelectRun { player_id } = turn.state {
             // Find the player
-            let player = players.get_mut(player_ent).unwrap();
+            let player = players.get_mut(player_id).unwrap();
 
             for (cursor, cursor_pos) in (&cursors, &tile_positions).join() {
                 if input.select {
                     if cursor.state == CursorState::Still {
                         let at_end_of_path = {
-                            can_moves.get(player_ent).unwrap().path.last() == Some(&cursor_pos.pos)
+                            can_moves.get(player_id).unwrap().path.last() == Some(&cursor_pos.pos)
                         };
                         if at_end_of_path {
-                            turn.state = TurnState::Running { player: player_ent };
+                            turn.state = TurnState::Running { player_id };
                             player.state = PlayerState::Running {
-                                path: can_moves.get(player_ent).unwrap().path.clone(),
+                                path: can_moves.get(player_id).unwrap().path.clone(),
                             };
-                            can_moves.remove(player_ent).unwrap();
+                            can_moves.remove(player_id).unwrap();
                         }
                     }
                 } else if input.cancel {
-                    can_moves.remove(player_ent).unwrap();
+                    can_moves.remove(player_id).unwrap();
                     turn.state = TurnState::SelectPlayer;
                 }
             }
@@ -367,6 +417,11 @@ impl<'a> System<'a> for PathSelectSystem {
         for (_cursor, cursor_pos) in (&cursors, &tile_positions).join() {
             for (can_move,) in (&mut can_moves,).join() {
                 if Some(&cursor_pos.pos) != can_move.path.last() {
+                    // If we're back on the start position clear the path
+                    if cursor_pos.pos == can_move.start {
+                        can_move.path.clear();
+                    }
+
                     // If this is a valid move location
                     if can_move.dests.contains(&cursor_pos.pos) {
                         // If we cross our existing path then shrink back

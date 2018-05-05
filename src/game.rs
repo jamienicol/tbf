@@ -223,6 +223,10 @@ impl<'a> event::EventHandler for Game<'a> {
                 self.player_movement_system.run_now(&self.world.res);
                 self.ball_dribble_system.run_now(&self.world.res);
             }
+            TurnState::SelectPass { .. } => {
+                self.cursor_movement_system.run_now(&self.world.res);
+                self.path_select_system.run_now(&self.world.res);
+            }
         }
 
         // Display frames per second in top left
