@@ -13,8 +13,9 @@ use components::{Ball, BallState, CanMove, Cursor, CursorState, Player, PlayerSt
                  SubTilePosition, TilePosition};
 use render::RenderSystem;
 use resources::{Assets, DeltaTime, Input, Map, Turn, TurnState};
-use systems::{ActionMenuSystem, BallDribbleSystem, CursorMovementSystem, PassSelectSystem,
-              PathSelectSystem, PlayerMovementSystem, PlayerSelectSystem, RunSelectSystem};
+use systems::{ActionMenuSystem, BallDribbleSystem, BallMovementSystem, CursorMovementSystem,
+              PassSelectSystem, PathSelectSystem, PlayerMovementSystem, PlayerSelectSystem,
+              RunSelectSystem};
 
 widget_ids!(pub struct WidgetIds {
     fps,
@@ -33,6 +34,7 @@ pub struct Game<'a> {
     path_select_system: PathSelectSystem,
     player_movement_system: PlayerMovementSystem,
     ball_dribble_system: BallDribbleSystem,
+    ball_movement_system: BallMovementSystem,
 
     fps_counter: FPSCounter,
 
@@ -188,6 +190,7 @@ impl<'a> Game<'a> {
             path_select_system: PathSelectSystem,
             player_movement_system: PlayerMovementSystem,
             ball_dribble_system: BallDribbleSystem,
+            ball_movement_system: BallMovementSystem,
 
             fps_counter,
 
@@ -230,7 +233,9 @@ impl<'a> event::EventHandler for Game<'a> {
                 self.path_select_system.run_now(&self.world.res);
                 self.pass_select_system.run_now(&self.world.res);
             }
-            TurnState::Passing { .. } => {}
+            TurnState::Passing { .. } => {
+                self.ball_movement_system.run_now(&self.world.res);
+            }
         }
 
         // Display frames per second in top left

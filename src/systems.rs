@@ -11,6 +11,7 @@ use resources::{DeltaTime, Input, Map, Turn, TurnState};
 
 const CURSOR_SPEED: f32 = 320.0;
 const PLAYER_SPEED: f32 = 640.0;
+const PASS_SPEED: f32 = 960.0;
 const TILE_SIZE: u32 = 64;
 const PLAYER_MOVE_DISTANCE: u32 = 4;
 const BALL_PASS_DISTANCE: u32 = 8;
@@ -598,6 +599,68 @@ impl<'a> System<'a> for PassSelectSystem {
                     can_moves.remove(ball_id).unwrap();
                     turn.state = TurnState::SelectPlayer;
                 }
+            }
+        }
+    }
+}
+
+// TODO: this should probably be combined with PlayerMovementSystem
+pub struct BallMovementSystem;
+
+impl<'a> System<'a> for BallMovementSystem {
+    type SystemData = (
+        Fetch<'a, DeltaTime>,
+        FetchMut<'a, Turn>,
+        WriteStorage<'a, Ball>,
+        WriteStorage<'a, TilePosition>,
+        WriteStorage<'a, SubTilePosition>,
+    );
+
+    fn run(&mut self, data: Self::SystemData) {
+        let (dt, mut turn, mut balls, mut tile_positions, mut sub_tile_positions) = data;
+
+        for (ball, tile_position, sub_tile_position) in
+            (&mut balls, &mut tile_positions, &mut sub_tile_positions).join()
+        {
+            let mut finished_movement = false;
+            if let BallState::Moving { ref mut path, .. } = ball.state {
+                let mut remaining_dt = dt.dt;
+
+                while !finished_movement && remaining_dt > 0.0 {
+                    let target = match path.first() {
+                        None => break,
+                        Some(target) => target.clone(),
+                    };
+                    let disp = tile_to_subtile(&target) - sub_tile_position.pos;
+
+                    if disp != Vector2::new(0.0, 0.0) {
+                        let velocity = disp.normalize_to(PASS_SPEED);
+
+                        let required_dt_x = required_time(disp.x, velocity.x);
+                        let required_dt_y = required_time(disp.y, velocity.y);
+
+                        let remaining_dt_x = remaining_dt.min(required_dt_x);
+                        let remaining_dt_y = remaining_dt.min(required_dt_y);
+
+                        sub_tile_position.pos +=
+                            Vector2::new(velocity.x * remaining_dt_x, velocity.y * remaining_dt_y);
+                        remaining_dt -= remaining_dt_x.max(remaining_dt_y);
+                    }
+
+                    if sub_tile_position.pos == tile_to_subtile(&target) {
+                        tile_position.pos = target.clone();
+                        path.remove(0);
+                    }
+
+                    if path.is_empty() {
+                        finished_movement = true;
+                    }
+                }
+            }
+
+            if finished_movement {
+                ball.state = BallState::Free;
+                turn.state = TurnState::SelectPlayer;
             }
         }
     }
