@@ -1,4 +1,5 @@
 use cgmath::{Point2, Vector2};
+use specs::Entity;
 
 #[derive(Component, Debug)]
 pub struct TilePosition {
@@ -61,6 +62,13 @@ pub struct CanMove {
     pub path: Vec<Point2<u32>>,
 }
 
+#[derive(PartialEq)]
+pub enum BallState {
+    Free,
+    Possessed(Entity),
+}
+
 #[derive(Component)]
 pub struct Ball {
+    pub state: BallState,
 }

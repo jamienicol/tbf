@@ -9,12 +9,12 @@ use ggez::{event, graphics, timer, Context, GameResult};
 use specs::{RunNow, World};
 use tiled;
 
-use components::{Ball, CanMove, Cursor, CursorState, Player, PlayerState, Size, Sprite, SubTilePosition,
-                 TilePosition};
+use components::{Ball, BallState, CanMove, Cursor, CursorState, Player, PlayerState, Size, Sprite,
+                 SubTilePosition, TilePosition};
 use render::RenderSystem;
 use resources::{Assets, DeltaTime, Input, Map, Turn, TurnState};
-use systems::{ActionMenuSystem, CursorMovementSystem, PathSelectSystem, PlayerMovementSystem,
-              PlayerSelectSystem, RunSelectSystem};
+use systems::{ActionMenuSystem, BallDribbleSystem, CursorMovementSystem, PathSelectSystem,
+              PlayerMovementSystem, PlayerSelectSystem, RunSelectSystem};
 
 widget_ids!(pub struct WidgetIds {
     fps,
@@ -31,6 +31,7 @@ pub struct Game<'a> {
     run_select_system: RunSelectSystem,
     path_select_system: PathSelectSystem,
     player_movement_system: PlayerMovementSystem,
+    ball_dribble_system: BallDribbleSystem,
 
     fps_counter: FPSCounter,
 
@@ -153,6 +154,7 @@ impl<'a> Game<'a> {
         world
             .create_entity()
             .with(Ball {
+                state: BallState::Free,
             })
             .with(TilePosition {
                 pos: Point2::new(2, 4),
@@ -183,6 +185,7 @@ impl<'a> Game<'a> {
             run_select_system: RunSelectSystem,
             path_select_system: PathSelectSystem,
             player_movement_system: PlayerMovementSystem,
+            ball_dribble_system: BallDribbleSystem,
 
             fps_counter,
 
@@ -218,6 +221,7 @@ impl<'a> event::EventHandler for Game<'a> {
             }
             TurnState::Running { .. } => {
                 self.player_movement_system.run_now(&self.world.res);
+                self.ball_dribble_system.run_now(&self.world.res);
             }
         }
 

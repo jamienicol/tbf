@@ -4,8 +4,8 @@ use cgmath::{InnerSpace, Point2, Vector2};
 use conrod::{self, Labelable, Positionable, Sizeable, Widget};
 use specs::{Entities, Fetch, FetchMut, Join, ReadStorage, System, WriteStorage};
 
-use components::{CanMove, Cursor, CursorState, Direction, Player, PlayerState, SubTilePosition,
-                 TilePosition};
+use components::{Ball, BallState, CanMove, Cursor, CursorState, Direction, Player, PlayerState,
+                 SubTilePosition, TilePosition};
 use game::WidgetIds;
 use resources::{DeltaTime, Input, Map, Turn, TurnState};
 
@@ -453,6 +453,44 @@ impl<'a> System<'a> for PlayerMovementSystem {
             if finished_run {
                 player.state = PlayerState::Still;
                 turn.state = TurnState::SelectPlayer;
+            }
+        }
+    }
+}
+
+pub struct BallDribbleSystem;
+
+impl<'a> System<'a> for BallDribbleSystem {
+    type SystemData = (
+        Entities<'a>,
+        WriteStorage<'a, Ball>,
+        ReadStorage<'a, Player>,
+        WriteStorage<'a, TilePosition>,
+        WriteStorage<'a, SubTilePosition>,
+    );
+
+    fn run(&mut self, data: Self::SystemData) {
+        let (entities, mut balls, players, mut tile_positions, mut sub_tile_positions) = data;
+
+        for (ball_id, ball) in (&*entities, &mut balls).join() {
+            match ball.state {
+                BallState::Free => {
+                    let ball_pos = tile_positions.get(ball_id).unwrap();
+
+                    for (player_id, _) in (&*entities, &players).join() {
+                        let player_pos = tile_positions.get(player_id).unwrap();
+                        if ball_pos.pos == player_pos.pos {
+                            ball.state = BallState::Possessed(player_id);
+                        }
+                    }
+                }
+                BallState::Possessed(player_id) => {
+                    let player_tile_pos = tile_positions.get(player_id).unwrap().pos.clone();
+                    let player_subtile_pos = sub_tile_positions.get(player_id).unwrap().pos.clone();
+
+                    tile_positions.get_mut(ball_id).unwrap().pos = player_tile_pos;
+                    sub_tile_positions.get_mut(ball_id).unwrap().pos = player_subtile_pos;
+                }
             }
         }
     }
