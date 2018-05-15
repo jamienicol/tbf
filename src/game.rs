@@ -1,11 +1,11 @@
 use std::path::Path;
 
-use cgmath::Point2;
 use conrod::{self, Colorable, Positionable, Widget};
 use fps_counter::FPSCounter;
 use gfx::handle::ShaderResourceView;
 use gfx_device_gl;
 use ggez::{event, graphics, timer, Context, GameResult};
+use nalgebra::Point2;
 use specs::{RunNow, World};
 use tiled;
 

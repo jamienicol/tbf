@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use cgmath::{InnerSpace, Point2, Vector2};
 use conrod::{self, Labelable, Positionable, Sizeable, Widget};
+use nalgebra::{Point2, Vector2};
 use specs::{Entities, Fetch, FetchMut, Join, ReadStorage, System, WriteStorage};
 
 use components::{Ball, BallState, CanMove, Cursor, CursorState, Direction, Player, PlayerState,
@@ -89,7 +89,7 @@ impl<'a> System<'a> for CursorMovementSystem {
 
                     if let Some(direction) = get_input(&input) {
                         let velocity =
-                            vector_from_direction_f32(&direction).normalize_to(CURSOR_SPEED);
+                            vector_from_direction_f32(&direction).normalize() * CURSOR_SPEED;
                         let offset = vector_from_direction_i32(&direction);
                         // Can't move left or above 0, 0
                         if tile_position.pos.x as i32 + offset.x >= 0
@@ -490,7 +490,7 @@ impl<'a> System<'a> for PlayerMovementSystem {
                     let disp = tile_to_subtile(&target) - sub_tile_position.pos;
 
                     if disp != Vector2::new(0.0, 0.0) {
-                        let velocity = disp.normalize_to(PLAYER_SPEED);
+                        let velocity = disp.normalize() * PLAYER_SPEED;
 
                         let required_dt_x = required_time(disp.x, velocity.x);
                         let required_dt_y = required_time(disp.y, velocity.y);
@@ -634,7 +634,7 @@ impl<'a> System<'a> for BallMovementSystem {
                     let disp = tile_to_subtile(&target) - sub_tile_position.pos;
 
                     if disp != Vector2::new(0.0, 0.0) {
-                        let velocity = disp.normalize_to(PASS_SPEED);
+                        let velocity = disp.normalize() * PASS_SPEED;
 
                         let required_dt_x = required_time(disp.x, velocity.x);
                         let required_dt_y = required_time(disp.y, velocity.y);

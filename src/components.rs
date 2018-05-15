@@ -1,4 +1,4 @@
-use cgmath::{Point2, Vector2};
+use nalgebra::{Point2, Vector2};
 use specs::Entity;
 
 #[derive(Component, Debug)]

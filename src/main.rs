@@ -1,4 +1,3 @@
-extern crate cgmath;
 #[macro_use]
 extern crate conrod;
 extern crate fps_counter;
@@ -6,6 +5,7 @@ extern crate gfx;
 extern crate gfx_device_gl;
 extern crate ggez;
 extern crate image;
+extern crate nalgebra;
 extern crate specs;
 #[macro_use]
 extern crate specs_derive;
