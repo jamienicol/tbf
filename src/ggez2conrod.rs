@@ -1,7 +1,6 @@
 use conrod;
 use conrod::Scalar;
-use ggez::Context;
-use ggez;
+use ggez::{self, Context};
 
 fn convert_mouse_coords(_ctx: &Context, x: i32, y: i32) -> (Scalar, Scalar) {
     (

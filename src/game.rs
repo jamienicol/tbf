@@ -42,12 +42,10 @@ pub struct Game<'a> {
     ui_renderer: conrod::backend::gfx::Renderer<'a, gfx_device_gl::Resources>,
     ui: conrod::Ui,
     widget_ids: WidgetIds,
-    ui_image_map: conrod::image::Map<
-        (
-            ShaderResourceView<gfx_device_gl::Resources, [f32; 4]>,
-            (u32, u32),
-        ),
-    >,
+    ui_image_map: conrod::image::Map<(
+        ShaderResourceView<gfx_device_gl::Resources, [f32; 4]>,
+        (u32, u32),
+    )>,
 }
 
 impl<'a> Game<'a> {

@@ -1,5 +1,5 @@
-use ggez::{graphics, Context};
 use ggez::graphics::spritebatch::SpriteBatch;
+use ggez::{graphics, Context};
 use specs::{Fetch, Join, ReadStorage, System};
 
 use components::{CanMove, Size, Sprite, SubTilePosition};
