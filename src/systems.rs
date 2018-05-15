@@ -321,21 +321,20 @@ impl<'a, 'b, 'c> System<'c> for ActionMenuSystem<'a, 'b> {
                 turn.state = TurnState::SelectRun { player_id };
             }
 
-            if conrod::widget::Button::new()
-                .label("Pass")
-                .down_from(self.widget_ids.action_menu_run, 16.0)
-                .w_h(160.0, 32.0)
-                .set(self.widget_ids.action_menu_pass, self.ui)
-                .was_clicked()
-            {
-                for (ball_id, ball) in (&*entities, &balls).join() {
-                    // Why can't I do this?
-                    // if ball.state == BallState::Possessed { player_id }
-                    if let BallState::Possessed {
-                        player_id: possessed_by,
-                    } = ball.state
-                    {
-                        if player_id == possessed_by {
+            for (ball_id, ball) in (&*entities, &balls).join() {
+                // Why can't I do this? - if ball.state == BallState::Possessed { player_id }
+                if let BallState::Possessed {
+                    player_id: possessed_by,
+                } = ball.state
+                {
+                    if player_id == possessed_by {
+                        if conrod::widget::Button::new()
+                            .label("Pass")
+                            .down(16.0)
+                            .w_h(160.0, 32.0)
+                            .set(self.widget_ids.action_menu_pass, self.ui)
+                            .was_clicked()
+                        {
                             let ball_pos = tile_positions.get(ball_id).unwrap().clone();
                             let dests =
                                 calculate_pass_targets(&ball_pos.pos, &map, BALL_PASS_DISTANCE);
@@ -347,17 +346,17 @@ impl<'a, 'b, 'c> System<'c> for ActionMenuSystem<'a, 'b> {
                             };
                             can_moves.insert(ball_id, can_move);
                             turn.state = TurnState::SelectPass { player_id, ball_id };
-
-                            // Can't pass more than one ball
-                            break;
                         }
+
+                        // Can't pass more than one ball
+                        break;
                     }
                 }
             }
 
             if conrod::widget::Button::new()
                 .label("Cancel")
-                .down_from(self.widget_ids.action_menu_pass, 16.0)
+                .down(16.0)
                 .w_h(160.0, 32.0)
                 .set(self.widget_ids.action_menu_cancel, self.ui)
                 .was_clicked() || input.cancel
