@@ -3,7 +3,7 @@ use conrod::Scalar;
 use ggez::Context;
 use ggez;
 
-fn convert_mouse_coords(ctx: &Context, x: i32, y: i32) -> (Scalar, Scalar) {
+fn convert_mouse_coords(_ctx: &Context, x: i32, y: i32) -> (Scalar, Scalar) {
     (
         // FIXME: get the actual window size from somewhere
         x as Scalar - 1280.0 / 2.0,
@@ -12,7 +12,7 @@ fn convert_mouse_coords(ctx: &Context, x: i32, y: i32) -> (Scalar, Scalar) {
 }
 
 fn convert_mouse_button(
-    ctx: &Context,
+    _ctx: &Context,
     button: ggez::event::MouseButton,
 ) -> conrod::input::state::mouse::Button {
     match button {
@@ -27,11 +27,11 @@ fn convert_mouse_button(
 
 pub fn convert_mouse_motion_event(
     ctx: &Context,
-    state: ggez::event::MouseState,
+    _state: ggez::event::MouseState,
     x: i32,
     y: i32,
-    xrel: i32,
-    yrel: i32,
+    _xrel: i32,
+    _yrel: i32,
 ) -> Option<conrod::event::Input> {
     let coords = convert_mouse_coords(ctx, x, y);
     let motion = conrod::input::Motion::MouseCursor {
@@ -44,8 +44,8 @@ pub fn convert_mouse_motion_event(
 pub fn convert_mouse_button_down_event(
     ctx: &mut Context,
     button: ggez::event::MouseButton,
-    x: i32,
-    y: i32,
+    _x: i32,
+    _y: i32,
 ) -> Option<conrod::event::Input> {
     let button = convert_mouse_button(ctx, button);
     Some(conrod::event::Input::Press(
@@ -56,8 +56,8 @@ pub fn convert_mouse_button_down_event(
 pub fn convert_mouse_button_up_event(
     ctx: &mut Context,
     button: ggez::event::MouseButton,
-    x: i32,
-    y: i32,
+    _x: i32,
+    _y: i32,
 ) -> Option<conrod::event::Input> {
     let button = convert_mouse_button(ctx, button);
     Some(conrod::event::Input::Release(
