@@ -1,15 +1,16 @@
 use std::collections::HashMap;
 
 use conrod::{self, Labelable, Positionable, Sizeable, Widget};
-use nalgebra::{Point2, Vector2};
+use nalgebra::{Matrix4, Point2, Vector2, Vector3};
 use specs::{Entities, Fetch, FetchMut, Join, ReadStorage, System, WriteStorage};
 
 use components::{Ball, BallState, CanMove, Cursor, CursorState, Direction, Player, PlayerState,
                  SubTilePosition, TilePosition};
 use game::WidgetIds;
-use resources::{DeltaTime, Input, Map, Turn, TurnState};
+use resources::{Camera, DeltaTime, Input, Map, Turn, TurnState};
 
 const CURSOR_SPEED: f32 = 320.0;
+const CAMERA_SPEED: f32 = 640.0;
 const PLAYER_SPEED: f32 = 640.0;
 const PASS_SPEED: f32 = 960.0;
 const TILE_SIZE: u32 = 64;
@@ -60,6 +61,33 @@ fn required_time(displacement: f32, velocity: f32) -> f32 {
         displacement / velocity
     } else {
         0.0
+    }
+}
+
+pub struct CameraSystem;
+
+impl<'a> System<'a> for CameraSystem {
+    type SystemData = (FetchMut<'a, Camera>, Fetch<'a, DeltaTime>, Fetch<'a, Input>);
+
+    fn run(&mut self, data: Self::SystemData) {
+        let (mut camera, dt, input) = data;
+
+        if input.a {
+            camera.mat = camera.mat
+                * Matrix4::new_translation(&Vector3::new(CAMERA_SPEED * dt.dt, 0.0, 0.0));
+        }
+        if input.w {
+            camera.mat = camera.mat
+                * Matrix4::new_translation(&Vector3::new(0.0, CAMERA_SPEED * dt.dt, 0.0));
+        }
+        if input.d {
+            camera.mat = camera.mat
+                * Matrix4::new_translation(&Vector3::new(-CAMERA_SPEED * dt.dt, 0.0, 0.0));
+        }
+        if input.s {
+            camera.mat = camera.mat
+                * Matrix4::new_translation(&Vector3::new(0.0, -CAMERA_SPEED * dt.dt, 0.0));
+        }
     }
 }
 

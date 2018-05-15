@@ -3,6 +3,7 @@ use std::default::Default;
 use std::string::String;
 
 use ggez::graphics::Image;
+use nalgebra::{Matrix4, Vector3};
 use specs::Entity;
 use tiled;
 
@@ -14,6 +15,18 @@ impl Assets {
     pub fn new() -> Self {
         Self {
             images: HashMap::new(),
+        }
+    }
+}
+
+pub struct Camera {
+    pub mat: Matrix4<f32>,
+}
+
+impl Camera {
+    pub fn new() -> Self {
+        Camera {
+            mat: Matrix4::new_translation(&Vector3::new(0.0, 0.0, 0.0)),
         }
     }
 }
@@ -31,6 +44,10 @@ pub struct Input {
     pub right: bool,
     pub select: bool,
     pub cancel: bool,
+    pub w: bool,
+    pub a: bool,
+    pub s: bool,
+    pub d: bool,
 }
 
 impl Default for Input {
@@ -42,6 +59,10 @@ impl Default for Input {
             right: false,
             select: false,
             cancel: false,
+            w: false,
+            a: false,
+            s: false,
+            d: false,
         }
     }
 }

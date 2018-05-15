@@ -13,10 +13,10 @@ use components::{Ball, BallState, CanMove, Cursor, CursorState, Player, PlayerSt
                  SubTilePosition, TilePosition};
 use ggez2conrod;
 use render::RenderSystem;
-use resources::{Assets, DeltaTime, Input, Map, Turn, TurnState};
-use systems::{ActionMenuSystem, BallDribbleSystem, BallMovementSystem, CursorMovementSystem,
-              PassSelectSystem, PathSelectSystem, PlayerMovementSystem, PlayerSelectSystem,
-              RunSelectSystem};
+use resources::{Assets, Camera, DeltaTime, Input, Map, Turn, TurnState};
+use systems::{ActionMenuSystem, BallDribbleSystem, BallMovementSystem, CameraSystem,
+              CursorMovementSystem, PassSelectSystem, PathSelectSystem, PlayerMovementSystem,
+              PlayerSelectSystem, RunSelectSystem};
 
 widget_ids!(pub struct WidgetIds {
     fps,
@@ -28,6 +28,7 @@ widget_ids!(pub struct WidgetIds {
 
 pub struct Game<'a> {
     world: World,
+    camera_system: CameraSystem,
     cursor_movement_system: CursorMovementSystem,
     player_select_system: PlayerSelectSystem,
     run_select_system: RunSelectSystem,
@@ -88,6 +89,7 @@ impl<'a> Game<'a> {
         world.register::<Cursor>();
 
         world.add_resource(assets);
+        world.add_resource(Camera::new());
         world.add_resource(Map { map });
         world.add_resource(DeltaTime { dt: 0.0 });
         world.add_resource(Input::default());
@@ -182,6 +184,7 @@ impl<'a> Game<'a> {
 
         Ok(Self {
             world,
+            camera_system: CameraSystem,
             cursor_movement_system: CursorMovementSystem,
             player_select_system: PlayerSelectSystem,
             run_select_system: RunSelectSystem,
@@ -205,6 +208,8 @@ impl<'a> event::EventHandler for Game<'a> {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
         let dt = timer::duration_to_f64(timer::get_delta(ctx));
         self.world.write_resource::<DeltaTime>().dt = dt as f32;
+
+        self.camera_system.run_now(&self.world.res);
 
         let ui = &mut self.ui.set_widgets();
 
@@ -309,6 +314,18 @@ impl<'a> event::EventHandler for Game<'a> {
             event::Keycode::Escape => {
                 input.cancel = true;
             }
+            event::Keycode::W => {
+                input.w = true;
+            }
+            event::Keycode::A => {
+                input.a = true;
+            }
+            event::Keycode::S => {
+                input.s = true;
+            }
+            event::Keycode::D => {
+                input.d = true;
+            }
             _ => {}
         }
     }
@@ -340,6 +357,18 @@ impl<'a> event::EventHandler for Game<'a> {
             }
             event::Keycode::Escape => {
                 input.cancel = false;
+            }
+            event::Keycode::W => {
+                input.w = false;
+            }
+            event::Keycode::A => {
+                input.a = false;
+            }
+            event::Keycode::S => {
+                input.s = false;
+            }
+            event::Keycode::D => {
+                input.d = false;
             }
             _ => {}
         }

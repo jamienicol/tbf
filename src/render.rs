@@ -3,7 +3,7 @@ use ggez::{graphics, Context};
 use specs::{Fetch, Join, ReadStorage, System};
 
 use components::{CanMove, Size, Sprite, SubTilePosition};
-use resources::{Assets, Map};
+use resources::{Assets, Camera, Map};
 
 pub struct RenderSystem<'a> {
     ctx: &'a mut Context,
@@ -18,6 +18,7 @@ impl<'a> RenderSystem<'a> {
 impl<'a, 'b> System<'b> for RenderSystem<'a> {
     type SystemData = (
         Fetch<'b, Assets>,
+        Fetch<'b, Camera>,
         Fetch<'b, Map>,
         ReadStorage<'b, CanMove>,
         ReadStorage<'b, SubTilePosition>,
@@ -26,7 +27,10 @@ impl<'a, 'b> System<'b> for RenderSystem<'a> {
     );
 
     fn run(&mut self, data: Self::SystemData) {
-        let (assets, map, can_moves, sub_tile_positions, _sizes, sprites) = data;
+        let (assets, camera, map, can_moves, sub_tile_positions, _sizes, sprites) = data;
+
+        graphics::set_transform(self.ctx, camera.mat);
+        graphics::apply_transformations(self.ctx).unwrap();
 
         // // render map
         let tileset = &map.map.tilesets[0];
