@@ -56,25 +56,29 @@ impl<'a> Game<'a> {
     ) -> GameResult<Self> {
         let mut assets = Assets::new();
 
-        let cursor_image = graphics::Image::new(ctx, "/cursor.png").unwrap();
+        let mut cursor_image = graphics::Image::new(ctx, "/cursor.png").unwrap();
+        cursor_image.set_filter(graphics::FilterMode::Nearest);
         assets.images.insert("cursor".to_string(), cursor_image);
-        let player_image = graphics::Image::new(ctx, "/player.png").unwrap();
+        let mut player_image = graphics::Image::new(ctx, "/player.png").unwrap();
+        player_image.set_filter(graphics::FilterMode::Nearest);
         assets.images.insert("player".to_string(), player_image);
-        let highlight_image = graphics::Image::new(ctx, "/highlight.png").unwrap();
-        assets
-            .images
-            .insert("highlight".to_string(), highlight_image);
-        let path_image = graphics::Image::new(ctx, "/path.png").unwrap();
+        let mut highlight_image = graphics::Image::new(ctx, "/highlight.png").unwrap();
+        highlight_image.set_filter(graphics::FilterMode::Nearest);
+        assets.images.insert("highlight".to_string(), highlight_image);
+        let mut path_image = graphics::Image::new(ctx, "/path.png").unwrap();
+        path_image.set_filter(graphics::FilterMode::Nearest);
         assets.images.insert("path".to_string(), path_image);
-        let ball_image = graphics::Image::new(ctx, "/ball.png").unwrap();
+        let mut ball_image = graphics::Image::new(ctx, "/ball.png").unwrap();
+        ball_image.set_filter(graphics::FilterMode::Nearest);
         assets.images.insert("ball".to_string(), ball_image);
 
         // Load map
         let map =
             tiled::parse_file(Path::new("resources/pitch.tmx")).expect("Failed to parse map.");
         for tileset in &map.tilesets {
-            let tileset_image =
+            let mut tileset_image =
                 graphics::Image::new(ctx, format!("/{}", &tileset.images[0].source)).unwrap();
+            tileset_image.set_filter(graphics::FilterMode::Nearest);
             assets.images.insert(tileset.name.clone(), tileset_image);
         }
 
