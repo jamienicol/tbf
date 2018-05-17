@@ -9,8 +9,8 @@ use nalgebra::Point2;
 use specs::{RunNow, World};
 use tiled;
 
-use components::{Ball, BallState, CanMove, Cursor, CursorState, Player, PlayerState, Size, Sprite,
-                 SubTilePosition, TilePosition};
+use components::{Ball, BallState, CanMove, Cursor, CursorState, Player, PlayerState, PlayerTeam,
+                 Size, Sprite, SubTilePosition, TilePosition};
 use ggez2conrod;
 use render::RenderSystem;
 use resources::{Assets, Camera, DeltaTime, Input, Map, Turn, TurnState};
@@ -25,6 +25,66 @@ widget_ids!(pub struct WidgetIds {
     action_menu_pass,
     action_menu_cancel,
 });
+
+fn create_cursor(world: &mut World, pos: &Point2<u32>) {
+    world
+        .create_entity()
+        .with(Cursor {
+            state: CursorState::Still,
+        })
+        .with(TilePosition { pos: pos.clone() })
+        .with(SubTilePosition {
+            pos: Point2::new((pos.x * 64) as f32, (pos.y * 64) as f32),
+        })
+        .with(Size {
+            width: 64.0,
+            height: 64.0,
+        })
+        .with(Sprite { image_id: "cursor" })
+        .build();
+}
+
+fn create_player(world: &mut World, pos: &Point2<u32>, team: PlayerTeam) {
+    world
+        .create_entity()
+        .with(Player {
+            state: PlayerState::Still,
+            team: team.clone(),
+        })
+        .with(TilePosition { pos: pos.clone() })
+        .with(SubTilePosition {
+            pos: Point2::new((pos.x * 64) as f32, (pos.y * 64) as f32),
+        })
+        .with(Size {
+            width: 64.0,
+            height: 64.0,
+        })
+        .with(Sprite {
+            image_id: match team {
+                PlayerTeam::Red => "player-red",
+                PlayerTeam::Blue => "player-blue",
+            },
+        })
+        .build();
+}
+
+fn create_ball(world: &mut World, pos: &Point2<u32>) {
+    world
+        .create_entity()
+        .with(Ball {
+            state: BallState::Free,
+        })
+        .with(TilePosition { pos: pos.clone() })
+        .with(SubTilePosition {
+            pos: Point2::new((pos.x * 64) as f32, (pos.y * 64) as f32),
+        })
+        .with(Size {
+            width: 64.0,
+            height: 64.0,
+        })
+        .with(Sprite { image_id: "ball" })
+        .build();
+}
 
 pub struct Game<'a> {
     world: World,
@@ -59,9 +119,12 @@ impl<'a> Game<'a> {
         let mut cursor_image = graphics::Image::new(ctx, "/cursor.png").unwrap();
         cursor_image.set_filter(graphics::FilterMode::Nearest);
         assets.images.insert("cursor".to_string(), cursor_image);
-        let mut player_image = graphics::Image::new(ctx, "/player.png").unwrap();
-        player_image.set_filter(graphics::FilterMode::Nearest);
-        assets.images.insert("player".to_string(), player_image);
+        let mut player_red_image = graphics::Image::new(ctx, "/player-red.png").unwrap();
+        player_red_image.set_filter(graphics::FilterMode::Nearest);
+        assets.images.insert("player-red".to_string(), player_red_image);
+        let mut player_blue_image = graphics::Image::new(ctx, "/player-blue.png").unwrap();
+        player_blue_image.set_filter(graphics::FilterMode::Nearest);
+        assets.images.insert("player-blue".to_string(), player_blue_image);
         let mut highlight_image = graphics::Image::new(ctx, "/highlight.png").unwrap();
         highlight_image.set_filter(graphics::FilterMode::Nearest);
         assets.images.insert("highlight".to_string(), highlight_image);
@@ -102,80 +165,15 @@ impl<'a> Game<'a> {
             state: TurnState::SelectPlayer,
         });
 
-        // Create cursor
-        world
-            .create_entity()
-            .with(Cursor {
-                state: CursorState::Still,
-            })
-            .with(TilePosition {
-                pos: Point2::new(0, 0),
-            })
-            .with(SubTilePosition {
-                pos: Point2::new(0.0, 0.0),
-            })
-            .with(Size {
-                width: 64.0,
-                height: 64.0,
-            })
-            .with(Sprite { image_id: "cursor" })
-            .build();
+        create_cursor(&mut world, &Point2::new(0, 0));
+        create_player(&mut world, &Point2::new(2, 2), PlayerTeam::Red);
+        create_player(&mut world, &Point2::new(4, 4), PlayerTeam::Red);
+        create_player(&mut world, &Point2::new(2, 6), PlayerTeam::Red);
+        create_player(&mut world, &Point2::new(10, 2), PlayerTeam::Blue);
+        create_player(&mut world, &Point2::new(12, 6), PlayerTeam::Blue);
+        create_player(&mut world, &Point2::new(11, 8), PlayerTeam::Blue);
 
-        // Create players
-        world
-            .create_entity()
-            .with(Player {
-                state: PlayerState::Still,
-            })
-            .with(TilePosition {
-                pos: Point2::new(2, 2),
-            })
-            .with(SubTilePosition {
-                pos: Point2::new(128.0, 128.0),
-            })
-            .with(Size {
-                width: 64.0,
-                height: 64.0,
-            })
-            .with(Sprite { image_id: "player" })
-            .build();
-
-        world
-            .create_entity()
-            .with(Player {
-                state: PlayerState::Still,
-            })
-            .with(TilePosition {
-                pos: Point2::new(4, 4),
-            })
-            .with(SubTilePosition {
-                pos: Point2::new(256.0, 256.0),
-            })
-            .with(Size {
-                width: 64.0,
-                height: 64.0,
-            })
-            .with(Sprite { image_id: "player" })
-            .build();
-
-        // Create the ball
-        world
-            .create_entity()
-            .with(Ball {
-                state: BallState::Free,
-            })
-            .with(TilePosition {
-                pos: Point2::new(2, 4),
-            })
-            .with(SubTilePosition {
-                pos: Point2::new(128.0, 256.0),
-            })
-            .with(Size {
-                width: 64.0,
-                height: 64.0,
-            })
-            .with(Sprite { image_id: "ball" })
-            .build();
+        create_ball(&mut world, &Point2::new(2, 4));
 
         let fps_counter = FPSCounter::new();
 

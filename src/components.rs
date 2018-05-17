@@ -49,9 +49,16 @@ pub enum PlayerState {
     Running { path: Vec<Point2<u32>> },
 }
 
+#[derive(Clone)]
+pub enum PlayerTeam {
+    Red,
+    Blue,
+}
+
 #[derive(Component)]
 pub struct Player {
     pub state: PlayerState,
+    pub team: PlayerTeam,
 }
 
 #[derive(Component)]
