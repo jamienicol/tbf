@@ -1,7 +1,6 @@
 use std::path::Path;
 
 use conrod::{self, Colorable, Positionable, Widget};
-use fps_counter::FPSCounter;
 use gfx::handle::ShaderResourceView;
 use gfx_device_gl;
 use ggez::{event, graphics, timer, Context, GameResult};
@@ -98,8 +97,6 @@ pub struct Game<'a> {
     ball_dribble_system: BallDribbleSystem,
     ball_movement_system: BallMovementSystem,
 
-    fps_counter: FPSCounter,
-
     ui_renderer: conrod::backend::gfx::Renderer<'a, gfx_device_gl::Resources>,
     ui: conrod::Ui,
     widget_ids: WidgetIds,
@@ -175,8 +172,6 @@ impl<'a> Game<'a> {
 
         create_ball(&mut world, &Point2::new(2, 4));
 
-        let fps_counter = FPSCounter::new();
-
         let mut ui = conrod::UiBuilder::new([1280.0, 800.0]).build();
         let widget_ids = WidgetIds::new(ui.widget_id_generator());
         let ui_image_map = conrod::image::Map::new();
@@ -195,8 +190,6 @@ impl<'a> Game<'a> {
             player_movement_system: PlayerMovementSystem,
             ball_dribble_system: BallDribbleSystem,
             ball_movement_system: BallMovementSystem,
-
-            fps_counter,
 
             ui_renderer,
             ui,
@@ -245,8 +238,8 @@ impl<'a> event::EventHandler for Game<'a> {
         }
 
         // Display frames per second in top left
-        let fps = self.fps_counter.tick();
-        conrod::widget::Text::new(&format!("{} FPS", fps))
+        let fps = timer::get_fps(ctx);
+        conrod::widget::Text::new(&format!("{:.0} FPS", fps))
             .top_left_with_margin_on(ui.window, 8.0)
             .color(conrod::color::WHITE)
             .font_size(12)

@@ -1,6 +1,5 @@
 #[macro_use]
 extern crate conrod;
-extern crate fps_counter;
 extern crate gfx;
 extern crate gfx_device_gl;
 extern crate ggez;

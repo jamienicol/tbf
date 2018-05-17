@@ -7,7 +7,6 @@ authors = ["Jamie Nicol <jamie@jamienicol.me>"]
 opt-level = 1
 
 [dependencies]
-fps_counter = "1.0"
 gfx = "0.17"
 gfx_device_gl = "0.15"
 image = "0.18"
