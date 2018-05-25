@@ -31,7 +31,7 @@ fn create_cursor(world: &mut World, pos: &Point2<u32>) {
         .with(Cursor {
             state: CursorState::Still,
         })
-        .with(TilePosition { pos: pos.clone() })
+        .with(TilePosition { pos: *pos })
         .with(SubTilePosition {
             pos: Point2::new((pos.x * 64) as f32, (pos.y * 64) as f32),
         })
@@ -48,9 +48,9 @@ fn create_player(world: &mut World, pos: &Point2<u32>, team: PlayerTeam) {
         .create_entity()
         .with(Player {
             state: PlayerState::Still,
-            team: team.clone(),
+            team,
         })
-        .with(TilePosition { pos: pos.clone() })
+        .with(TilePosition { pos: *pos })
         .with(SubTilePosition {
             pos: Point2::new((pos.x * 64) as f32, (pos.y * 64) as f32),
         })
@@ -73,7 +73,7 @@ fn create_ball(world: &mut World, pos: &Point2<u32>) {
         .with(Ball {
             state: BallState::Free,
         })
-        .with(TilePosition { pos: pos.clone() })
+        .with(TilePosition { pos: *pos })
         .with(SubTilePosition {
             pos: Point2::new((pos.x * 64) as f32, (pos.y * 64) as f32),
         })

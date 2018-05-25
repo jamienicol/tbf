@@ -53,7 +53,7 @@ pub enum PlayerState {
     Running { path: Vec<Point2<u32>> },
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub enum PlayerTeam {
     Red,
     Blue,

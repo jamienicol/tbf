@@ -81,20 +81,20 @@ impl<'a> System<'a> for CameraSystem {
         let (mut camera, dt, input) = data;
 
         if input.a {
-            camera.mat = camera.mat
-                * Matrix4::new_translation(&Vector3::new(CAMERA_SPEED * dt.dt, 0.0, 0.0));
+            camera.mat *=
+                Matrix4::new_translation(&Vector3::new(CAMERA_SPEED * dt.dt, 0.0, 0.0));
         }
         if input.w {
-            camera.mat = camera.mat
-                * Matrix4::new_translation(&Vector3::new(0.0, CAMERA_SPEED * dt.dt, 0.0));
+            camera.mat *=
+                Matrix4::new_translation(&Vector3::new(0.0, CAMERA_SPEED * dt.dt, 0.0));
         }
         if input.d {
-            camera.mat = camera.mat
-                * Matrix4::new_translation(&Vector3::new(-CAMERA_SPEED * dt.dt, 0.0, 0.0));
+            camera.mat *=
+                Matrix4::new_translation(&Vector3::new(-CAMERA_SPEED * dt.dt, 0.0, 0.0));
         }
         if input.s {
-            camera.mat = camera.mat
-                * Matrix4::new_translation(&Vector3::new(0.0, -CAMERA_SPEED * dt.dt, 0.0));
+            camera.mat *=
+                Matrix4::new_translation(&Vector3::new(0.0, -CAMERA_SPEED * dt.dt, 0.0));
         }
     }
 }
@@ -252,8 +252,7 @@ fn calculate_run_targets<'a>(
         // if the tile is already occupied then rule it out
         let occupied = (players, tile_positions)
             .join()
-            .find(|&(_, pos)| pos.pos == next)
-            .is_some();
+            .any(|(_, pos)| pos.pos == next);
         if occupied && next != *start_pos {
             continue;
         }
@@ -339,18 +338,18 @@ impl<'a, 'b, 'c> System<'c> for ActionMenuSystem<'a, 'b> {
                 .set(self.widget_ids.action_menu_run, self.ui)
                 .was_clicked() || input.select
             {
-                let player_pos = tile_positions.get(player_id).unwrap().clone();
+                let player_pos = tile_positions.get(player_id).unwrap().pos;
                 let dests = calculate_run_targets(
-                    &player_pos.pos,
+                    &player_pos,
                     &map,
                     PLAYER_MOVE_DISTANCE,
                     &players,
                     &tile_positions,
                 );
                 let can_move = CanMove {
-                    start: player_pos.pos,
+                    start: player_pos,
                     distance: PLAYER_MOVE_DISTANCE,
-                    dests: dests,
+                    dests,
                     path: Vec::new(),
                 };
                 can_moves.insert(player_id, can_move);
@@ -371,13 +370,13 @@ impl<'a, 'b, 'c> System<'c> for ActionMenuSystem<'a, 'b> {
                             .set(self.widget_ids.action_menu_pass, self.ui)
                             .was_clicked()
                         {
-                            let ball_pos = tile_positions.get(ball_id).unwrap().clone();
+                            let ball_pos = tile_positions.get(ball_id).unwrap().pos;
                             let dests =
-                                calculate_pass_targets(&ball_pos.pos, &map, BALL_PASS_DISTANCE);
+                                calculate_pass_targets(&ball_pos, &map, BALL_PASS_DISTANCE);
                             let can_move = CanMove {
-                                start: ball_pos.pos,
+                                start: ball_pos,
                                 distance: BALL_PASS_DISTANCE,
-                                dests: dests,
+                                dests,
                                 path: Vec::new(),
                             };
                             can_moves.insert(ball_id, can_move);
@@ -466,29 +465,20 @@ impl<'a> System<'a> for PathSelectSystem {
                         can_move.path.clear();
                     }
 
-                    // If this is a valid move location
-                    if can_move.dests.contains(&cursor_pos.pos) {
+                    if let Some((i, _)) = can_move
+                        .path
+                        .iter()
+                        .enumerate()
+                        .find(|&(_, &step)| step == cursor_pos.pos)
+                    {
                         // If we cross our existing path then shrink back
-                        if let Some((i, _)) = can_move
-                            .path
-                            .iter()
-                            .enumerate()
-                            .find(|&(_, &step)| step == cursor_pos.pos)
-                        {
-                            can_move.path.truncate(i + 1);
-                        } else {
-                            // Check we've only moved by 1 tile
-                            if get_adjacent_tiles(
-                                can_move.path.last().unwrap_or(&can_move.start),
-                                &Vector2::new(map.map.width, map.map.height),
-                            ).contains(&cursor_pos.pos)
-                            {
-                                // Check our path isn't too long
-                                if can_move.path.len() <= can_move.distance as usize {
-                                    can_move.path.push(cursor_pos.pos.clone());
-                                }
-                            }
-                        }
+                        can_move.path.truncate(i + 1);
+                    } else if get_adjacent_tiles(
+                        can_move.path.last().unwrap_or(&can_move.start),
+                        &Vector2::new(map.map.width, map.map.height),
+                    ).contains(&cursor_pos.pos) && can_move.path.len() < can_move.distance as usize {
+                        // We've only moved by 1 tile and the path isn't too long
+                        can_move.path.push(cursor_pos.pos);
                     }
                 }
             }
@@ -520,7 +510,7 @@ impl<'a> System<'a> for PlayerMovementSystem {
                 while !finished_run && remaining_dt > 0.0 {
                     let target = match path.first() {
                         None => break,
-                        Some(target) => target.clone(),
+                        Some(target) => *target,
                     };
                     let disp = tile_to_subtile(&target) - sub_tile_position.pos;
 
@@ -539,7 +529,7 @@ impl<'a> System<'a> for PlayerMovementSystem {
                     }
 
                     if sub_tile_position.pos == tile_to_subtile(&target) {
-                        tile_position.pos = target.clone();
+                        tile_position.pos = target;
                         path.remove(0);
                     }
 
@@ -584,8 +574,8 @@ impl<'a> System<'a> for BallDribbleSystem {
                     }
                 }
                 BallState::Possessed { player_id } => {
-                    let player_tile_pos = tile_positions.get(player_id).unwrap().pos.clone();
-                    let player_subtile_pos = sub_tile_positions.get(player_id).unwrap().pos.clone();
+                    let player_tile_pos = tile_positions.get(player_id).unwrap().pos;
+                    let player_subtile_pos = sub_tile_positions.get(player_id).unwrap().pos;
 
                     tile_positions.get_mut(ball_id).unwrap().pos = player_tile_pos;
                     sub_tile_positions.get_mut(ball_id).unwrap().pos = player_subtile_pos;
@@ -664,7 +654,7 @@ impl<'a> System<'a> for BallMovementSystem {
                 while !finished_movement && remaining_dt > 0.0 {
                     let target = match path.first() {
                         None => break,
-                        Some(target) => target.clone(),
+                        Some(target) => *target,
                     };
                     let disp = tile_to_subtile(&target) - sub_tile_position.pos;
 
@@ -683,7 +673,7 @@ impl<'a> System<'a> for BallMovementSystem {
                     }
 
                     if sub_tile_position.pos == tile_to_subtile(&target) {
-                        tile_position.pos = target.clone();
+                        tile_position.pos = target;
                         path.remove(0);
                     }
 

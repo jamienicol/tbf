@@ -22,7 +22,7 @@ fn get_direction(from: &Point2<u32>, to: &Point2<u32>) -> Option<Direction> {
 
 fn get_path_directions(
     start: &Point2<u32>,
-    path: &Vec<Point2<u32>>,
+    path: &[Point2<u32>],
 ) -> Vec<(Direction, Option<Direction>)> {
     let mut directions = Vec::with_capacity(path.len());
 

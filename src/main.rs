@@ -32,7 +32,7 @@ fn main() {
     let ui_renderer = {
         let (factory, _device, _encoder, _dtv, rtv) = graphics::get_gfx_objects(ctx);
 
-        conrod::backend::gfx::Renderer::new(factory, &rtv, f64::from(1.0)).unwrap()
+        conrod::backend::gfx::Renderer::new(factory, &rtv, 1.0).unwrap()
     };
 
     let game = &mut Game::new(ctx, ui_renderer).unwrap();

@@ -5,8 +5,8 @@ use ggez::{self, Context};
 fn convert_mouse_coords(_ctx: &Context, x: i32, y: i32) -> (Scalar, Scalar) {
     (
         // FIXME: get the actual window size from somewhere
-        x as Scalar - 1280.0 / 2.0,
-        (y as Scalar - 800.0 / 2.0) * -1.0,
+        Scalar::from(x) - 1280.0 / 2.0,
+        (Scalar::from(y) - 800.0 / 2.0) * -1.0,
     )
 }
 
@@ -37,7 +37,7 @@ pub fn convert_mouse_motion_event(
         x: coords.0,
         y: coords.1,
     };
-    Some(conrod::event::Input::Motion(motion).into())
+    Some(conrod::event::Input::Motion(motion))
 }
 
 pub fn convert_mouse_button_down_event(
@@ -48,7 +48,7 @@ pub fn convert_mouse_button_down_event(
 ) -> Option<conrod::event::Input> {
     let button = convert_mouse_button(ctx, button);
     Some(conrod::event::Input::Press(
-        conrod::input::Button::Mouse(button).into(),
+        conrod::input::Button::Mouse(button),
     ))
 }
 
@@ -60,6 +60,6 @@ pub fn convert_mouse_button_up_event(
 ) -> Option<conrod::event::Input> {
     let button = convert_mouse_button(ctx, button);
     Some(conrod::event::Input::Release(
-        conrod::input::Button::Mouse(button).into(),
+        conrod::input::Button::Mouse(button),
     ))
 }
