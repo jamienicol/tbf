@@ -25,34 +25,42 @@ fn tile_to_subtile(tile_pos: &Point2<u32>) -> Point2<f32> {
 }
 
 fn get_input(input: &Input) -> Option<Direction> {
-    if input.left && !input.right {
-        Some(Direction::Left)
-    } else if input.up && !input.down {
-        Some(Direction::Up)
-    } else if input.right && !input.left {
-        Some(Direction::Right)
-    } else if input.down && !input.up {
-        Some(Direction::Down)
-    } else {
-        None
+    match (input.left, input.up, input.right, input.down) {
+        (true, false, false, false) => Some(Direction::Left),
+        (true, true, false, false) => Some(Direction::UpLeft),
+        (false, true, false, false) => Some(Direction::Up),
+        (false, true, true, false) => Some(Direction::UpRight),
+        (false, false, true, false) => Some(Direction::Right),
+        (false, false, true, true) => Some(Direction::DownRight),
+        (false, false, false, true) => Some(Direction::Down),
+        (true, false, false, true) => Some(Direction::DownLeft),
+        _ => None,
     }
 }
 
 fn vector_from_direction_i32(direction: &Direction) -> Vector2<i32> {
     match *direction {
         Direction::Left => Vector2::new(-1, 0),
+        Direction::UpLeft => Vector2::new(-1, -1),
         Direction::Up => Vector2::new(0, -1),
+        Direction::UpRight => Vector2::new(1, -1),
         Direction::Right => Vector2::new(1, 0),
+        Direction::DownRight => Vector2::new(1, 1),
         Direction::Down => Vector2::new(0, 1),
+        Direction::DownLeft => Vector2::new(-1, 1),
     }
 }
 
 fn vector_from_direction_f32(direction: &Direction) -> Vector2<f32> {
     match *direction {
         Direction::Left => Vector2::new(-1.0, 0.0),
+        Direction::UpLeft => Vector2::new(-1.0, -1.0).normalize(),
         Direction::Up => Vector2::new(0.0, -1.0),
+        Direction::UpRight => Vector2::new(1.0, -1.0).normalize(),
         Direction::Right => Vector2::new(1.0, 0.0),
+        Direction::DownRight => Vector2::new(1.0, 1.0).normalize(),
         Direction::Down => Vector2::new(0.0, 1.0),
+        Direction::DownLeft => Vector2::new(-1.0, 1.0).normalize(),
     }
 }
 
