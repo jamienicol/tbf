@@ -218,7 +218,25 @@ impl event::EventHandler for Game {
             rs.run_now(&self.world.res);
         }
 
+        // Display frames per second in top left
+        let mut fps_text = graphics::Text::new(format!("{:.0} FPS", timer::fps(ctx)));
+        fps_text.set_font(graphics::Font::default(), graphics::Scale::uniform(24.0));
+        graphics::draw(
+            ctx,
+            &fps_text,
+            (Point2::new(8.0, 8.0), graphics::WHITE),
+        )?;
 
+        // Display the game state in bottom left
+        let state = self.world.read_resource::<Turn>().state.clone();
+        let mut state_text = graphics::Text::new(format!("{:?}", state));
+        state_text.set_font(graphics::Font::default(), graphics::Scale::uniform(24.0));
+        let height = state_text.height(ctx) as f32;
+        graphics::draw(
+            ctx,
+            &state_text,
+            (Point2::new(8.0, 800.0 - height - 8.0), graphics::WHITE),
+        )?;
 
         graphics::present(ctx)?;
         Ok(())
