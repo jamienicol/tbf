@@ -16,6 +16,7 @@ use std::path::PathBuf;
 
 use ggez::conf::{WindowMode, WindowSetup};
 use ggez::{event, ContextBuilder, GameResult};
+use ggez::graphics;
 
 use game::Game;
 
@@ -30,9 +31,11 @@ fn main() -> GameResult {
 
     let (ctx, events_loop) = &mut ContextBuilder::new("tbf", "Jamie Nicol")
         .window_setup(WindowSetup::default().title("Turn Based Football"))
-        .window_mode(WindowMode::default().dimensions(1280.0, 800.0))
+        .window_mode(WindowMode::default().dimensions(640.0, 400.0))
         .add_resource_path(resource_dir)
         .build()?;
+
+    graphics::set_screen_coordinates(ctx, graphics::Rect::new(0.0, 0.0, 1280.0, 800.0))?;
 
     let game = &mut Game::new(ctx)?;
     event::run(ctx, events_loop, game)?;
