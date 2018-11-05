@@ -168,7 +168,7 @@ impl Game {
 
 impl event::EventHandler for Game {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
-        let dt = timer::duration_to_f64(timer::get_delta(ctx));
+        let dt = timer::duration_to_f64(timer::delta(ctx));
         self.world.write_resource::<DeltaTime>().dt = dt as f32;
 
         self.camera_system.run_now(&self.world.res);
@@ -211,7 +211,7 @@ impl event::EventHandler for Game {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        graphics::clear(ctx);
+        graphics::clear(ctx, graphics::Color::new(0.0, 0.0, 0.0, 1.0));
 
         {
             let mut rs = RenderSystem::new(ctx);
@@ -220,48 +220,48 @@ impl event::EventHandler for Game {
 
 
 
-        graphics::present(ctx);
+        graphics::present(ctx)?;
         Ok(())
     }
 
     fn key_down_event(
         &mut self,
         _ctx: &mut Context,
-        keycode: event::Keycode,
-        _keymod: event::Mod,
+        keycode: event::KeyCode,
+        _keymod: event::KeyMods,
         _repeat: bool,
     ) {
         let mut input = self.world.write_resource::<Input>();
 
         match keycode {
-            event::Keycode::Left => {
+            event::KeyCode::Left => {
                 input.left = true;
             }
-            event::Keycode::Up => {
+            event::KeyCode::Up => {
                 input.up = true;
             }
-            event::Keycode::Down => {
+            event::KeyCode::Down => {
                 input.down = true;
             }
-            event::Keycode::Right => {
+            event::KeyCode::Right => {
                 input.right = true;
             }
-            event::Keycode::Return | event::Keycode::Space => {
+            event::KeyCode::Return | event::KeyCode::Space => {
                 input.select = true;
             }
-            event::Keycode::Escape => {
+            event::KeyCode::Escape => {
                 input.cancel = true;
             }
-            event::Keycode::W => {
+            event::KeyCode::W => {
                 input.w = true;
             }
-            event::Keycode::A => {
+            event::KeyCode::A => {
                 input.a = true;
             }
-            event::Keycode::S => {
+            event::KeyCode::S => {
                 input.s = true;
             }
-            event::Keycode::D => {
+            event::KeyCode::D => {
                 input.d = true;
             }
             _ => {}
@@ -271,41 +271,40 @@ impl event::EventHandler for Game {
     fn key_up_event(
         &mut self,
         _ctx: &mut Context,
-        keycode: event::Keycode,
-        _keymod: event::Mod,
-        _repeat: bool,
+        keycode: event::KeyCode,
+        _keymod: event::KeyMods,
     ) {
         let mut input = self.world.write_resource::<Input>();
 
         match keycode {
-            event::Keycode::Left => {
+            event::KeyCode::Left => {
                 input.left = false;
             }
-            event::Keycode::Up => {
+            event::KeyCode::Up => {
                 input.up = false;
             }
-            event::Keycode::Down => {
+            event::KeyCode::Down => {
                 input.down = false;
             }
-            event::Keycode::Right => {
+            event::KeyCode::Right => {
                 input.right = false;
             }
-            event::Keycode::Return | event::Keycode::Space => {
+            event::KeyCode::Return | event::KeyCode::Space => {
                 input.select = false;
             }
-            event::Keycode::Escape => {
+            event::KeyCode::Escape => {
                 input.cancel = false;
             }
-            event::Keycode::W => {
+            event::KeyCode::W => {
                 input.w = false;
             }
-            event::Keycode::A => {
+            event::KeyCode::A => {
                 input.a = false;
             }
-            event::Keycode::S => {
+            event::KeyCode::S => {
                 input.s = false;
             }
-            event::Keycode::D => {
+            event::KeyCode::D => {
                 input.d = false;
             }
             _ => {}

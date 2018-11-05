@@ -1,6 +1,4 @@
-extern crate gfx;
 extern crate ggez;
-extern crate image;
 extern crate nalgebra;
 extern crate specs;
 #[macro_use]
@@ -13,18 +11,19 @@ mod render;
 mod resources;
 mod systems;
 
-use ggez::conf::Conf;
-use ggez::{event, graphics, Context};
+use ggez::conf::{WindowMode, WindowSetup};
+use ggez::{event, ContextBuilder, GameResult};
 
 use game::Game;
 
-fn main() {
-    let mut c = Conf::new();
-    c.window_setup.title = "Turn Based Football".to_string();
-    c.window_mode.width = 1280;
-    c.window_mode.height = 800;
-    let ctx = &mut Context::load_from_conf("tbf", "Jamie Nicol", c).unwrap();
+fn main() -> GameResult {
+    let (ctx, events_loop) = &mut ContextBuilder::new("tbf", "Jamie Nicol")
+        .window_setup(WindowSetup::default().title("Turn Based Football"))
+        .window_mode(WindowMode::default().dimensions(1280.0, 800.0))
+        .build()?;
 
-    let game = &mut Game::new(ctx).unwrap();
-    event::run(ctx, game).unwrap();
+    let game = &mut Game::new(ctx)?;
+    event::run(ctx, events_loop, game)?;
+
+    Ok(())
 }

@@ -111,20 +111,16 @@ impl<'a, 'b> System<'b> for RenderSystem<'a> {
                     w: tileset.tile_width as f32 / tileset.images[0].width as f32,
                     h: tileset.tile_height as f32 / tileset.images[0].height as f32,
                 };
-                let dest = graphics::Point2::new(
+                let dest = Point2::new(
                     (x * map.map.tile_width) as f32,
                     (y * map.map.tile_height) as f32,
                 );
-                let param = graphics::DrawParam {
-                    src,
-                    dest,
-                    ..graphics::DrawParam::default()
-                };
+                let param = graphics::DrawParam::default().src(src).dest(dest);
 
                 tile_batch.add(param);
             }
         }
-        graphics::draw(self.ctx, &tile_batch, graphics::Point2::new(0.0, 0.0), 0.0).unwrap();
+        graphics::draw(self.ctx, &tile_batch, graphics::DrawParam::default()).unwrap();
 
         // render highlights
         let mut highlight_batch = SpriteBatch::new(assets.images["highlight"].clone());
@@ -136,15 +132,11 @@ impl<'a, 'b> System<'b> for RenderSystem<'a> {
                     w: 1.0,
                     h: 1.0,
                 };
-                let dest = graphics::Point2::new(
+                let dest = Point2::new(
                     (dest.x * map.map.tile_width) as f32,
                     (dest.y * map.map.tile_height) as f32,
                 );
-                let param = graphics::DrawParam {
-                    src,
-                    dest,
-                    ..graphics::DrawParam::default()
-                };
+                let param = graphics::DrawParam::default().src(src).dest(dest);
 
                 highlight_batch.add(param);
             }
@@ -152,8 +144,7 @@ impl<'a, 'b> System<'b> for RenderSystem<'a> {
         graphics::draw(
             self.ctx,
             &highlight_batch,
-            graphics::Point2::new(0.0, 0.0),
-            0.0,
+            graphics::DrawParam::default(),
         ).unwrap();
 
         // render paths
@@ -169,19 +160,15 @@ impl<'a, 'b> System<'b> for RenderSystem<'a> {
                     w: 64.0 / path_image.width() as f32,
                     h: 64.0 / path_image.height() as f32,
                 };
-                let dest = graphics::Point2::new(
+                let dest = Point2::new(
                     (path.x * map.map.tile_width) as f32,
                     (path.y * map.map.tile_height) as f32,
                 );
-                let param = graphics::DrawParam {
-                    src,
-                    dest,
-                    ..graphics::DrawParam::default()
-                };
+                let param = graphics::DrawParam::default().src(src).dest(dest);
                 path_batch.add(param);
             }
         }
-        graphics::draw(self.ctx, &path_batch, graphics::Point2::new(0.0, 0.0), 0.0).unwrap();
+        graphics::draw(self.ctx, &path_batch, graphics::DrawParam::default()).unwrap();
 
         // render sprite components
         for (position, sprite) in (&sub_tile_positions, &sprites).join() {
@@ -193,14 +180,10 @@ impl<'a, 'b> System<'b> for RenderSystem<'a> {
                 w: 1.0,
                 h: 1.0,
             };
-            let dest = graphics::Point2::new(position.pos.x, position.pos.y);
-            let param = graphics::DrawParam {
-                src,
-                dest,
-                ..graphics::DrawParam::default()
-            };
+            let dest = Point2::new(position.pos.x, position.pos.y);
+            let param = graphics::DrawParam::default().src(src).dest(dest);
 
-            graphics::draw_ex(self.ctx, texture, param).unwrap();
+            graphics::draw(self.ctx, texture, param).unwrap();
         }
     }
 }
