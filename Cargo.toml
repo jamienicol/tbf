@@ -8,16 +8,11 @@ opt-level = 1
 
 [dependencies]
 gfx = "0.17"
-gfx_device_gl = "0.15"
 image = "0.18"
 nalgebra = "0.14"
 specs = "0.10"
 specs-derive = "0.1"
 tiled = "0.7"
-
-[dependencies.conrod]
-version = "0.59"
-features = ["gfx_rs"]
 
 [dependencies.ggez]
 version = "0.4"

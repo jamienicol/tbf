@@ -1,12 +1,10 @@
 use std::collections::HashMap;
 
-use conrod::{self, Labelable, Positionable, Sizeable, Widget};
 use nalgebra::{Matrix4, Point2, Vector2, Vector3};
 use specs::{Entities, Fetch, FetchMut, Join, ReadStorage, System, WriteStorage};
 
 use components::{Ball, BallState, CanMove, Cursor, CursorState, Direction, Player, PlayerState,
                  SubTilePosition, TilePosition};
-use game::WidgetIds;
 use resources::{Camera, DeltaTime, Input, Map, Turn, TurnState};
 
 const CURSOR_SPEED: f32 = 320.0;
@@ -301,43 +299,25 @@ fn calculate_pass_targets(
     targets
 }
 
-pub struct ActionMenuSystem<'a, 'b>
-where
-    'b: 'a,
-{
-    ui: &'a mut conrod::UiCell<'b>,
-    widget_ids: &'a WidgetIds,
-}
+pub struct ActionMenuSystem;
 
-impl<'a, 'b> ActionMenuSystem<'a, 'b> {
-    pub fn new(ui: &'a mut conrod::UiCell<'b>, widget_ids: &'a WidgetIds) -> Self {
-        ActionMenuSystem { ui, widget_ids }
-    }
-}
-
-impl<'a, 'b, 'c> System<'c> for ActionMenuSystem<'a, 'b> {
+impl<'a> System<'a> for ActionMenuSystem {
     type SystemData = (
-        Entities<'c>,
-        FetchMut<'c, Turn>,
-        Fetch<'c, Input>,
-        Fetch<'c, Map>,
-        ReadStorage<'c, Player>,
-        ReadStorage<'c, Ball>,
-        ReadStorage<'c, TilePosition>,
-        WriteStorage<'c, CanMove>,
+        Entities<'a>,
+        FetchMut<'a, Turn>,
+        Fetch<'a, Input>,
+        Fetch<'a, Map>,
+        ReadStorage<'a, Player>,
+        ReadStorage<'a, Ball>,
+        ReadStorage<'a, TilePosition>,
+        WriteStorage<'a, CanMove>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
         let (entities, mut turn, input, map, players, balls, tile_positions, mut can_moves) = data;
 
         if let TurnState::ActionMenu { player_id } = turn.state {
-            if conrod::widget::Button::new()
-                .label("Run")
-                .top_right_with_margin_on(self.ui.window, 16.0)
-                .w_h(160.0, 32.0)
-                .set(self.widget_ids.action_menu_run, self.ui)
-                .was_clicked() || input.select
-            {
+            if input.select { // FIXME: run button clicked
                 let player_pos = tile_positions.get(player_id).unwrap().pos;
                 let dests = calculate_run_targets(
                     &player_pos,
@@ -363,13 +343,7 @@ impl<'a, 'b, 'c> System<'c> for ActionMenuSystem<'a, 'b> {
                 } = ball.state
                 {
                     if player_id == possessed_by {
-                        if conrod::widget::Button::new()
-                            .label("Pass")
-                            .down(16.0)
-                            .w_h(160.0, 32.0)
-                            .set(self.widget_ids.action_menu_pass, self.ui)
-                            .was_clicked()
-                        {
+                        if false { // FIXME: pass button clicked
                             let ball_pos = tile_positions.get(ball_id).unwrap().pos;
                             let dests =
                                 calculate_pass_targets(&ball_pos, &map, BALL_PASS_DISTANCE);
@@ -389,13 +363,7 @@ impl<'a, 'b, 'c> System<'c> for ActionMenuSystem<'a, 'b> {
                 }
             }
 
-            if conrod::widget::Button::new()
-                .label("Cancel")
-                .down(16.0)
-                .w_h(160.0, 32.0)
-                .set(self.widget_ids.action_menu_cancel, self.ui)
-                .was_clicked() || input.cancel
-            {
+            if input.cancel { // FIXME: cancel button clicked
                 turn.state = TurnState::SelectPlayer;
             }
         }

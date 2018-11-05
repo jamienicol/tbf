@@ -1,8 +1,5 @@
 use std::path::Path;
 
-use conrod::{self, Colorable, Positionable, Widget};
-use gfx::handle::ShaderResourceView;
-use gfx_device_gl;
 use ggez::{event, graphics, timer, Context, GameResult};
 use nalgebra::Point2;
 use specs::{RunNow, World};
@@ -10,20 +7,11 @@ use tiled;
 
 use components::{Ball, BallState, CanMove, Cursor, CursorState, Player, PlayerState, PlayerTeam,
                  Size, Sprite, SubTilePosition, TilePosition};
-use ggez2conrod;
 use render::RenderSystem;
 use resources::{Assets, Camera, DeltaTime, Input, Map, Turn, TurnState};
 use systems::{ActionMenuSystem, BallDribbleSystem, BallMovementSystem, CameraSystem,
               CursorMovementSystem, PassSelectSystem, PathSelectSystem, PlayerMovementSystem,
               PlayerSelectSystem, RunSelectSystem};
-
-widget_ids!(pub struct WidgetIds {
-    fps,
-    turn_state,
-    action_menu_run,
-    action_menu_pass,
-    action_menu_cancel,
-});
 
 fn create_cursor(world: &mut World, pos: &Point2<u32>) {
     world
@@ -85,7 +73,7 @@ fn create_ball(world: &mut World, pos: &Point2<u32>) {
         .build();
 }
 
-pub struct Game<'a> {
+pub struct Game {
     world: World,
     camera_system: CameraSystem,
     cursor_movement_system: CursorMovementSystem,
@@ -96,20 +84,11 @@ pub struct Game<'a> {
     player_movement_system: PlayerMovementSystem,
     ball_dribble_system: BallDribbleSystem,
     ball_movement_system: BallMovementSystem,
-
-    ui_renderer: conrod::backend::gfx::Renderer<'a, gfx_device_gl::Resources>,
-    ui: conrod::Ui,
-    widget_ids: WidgetIds,
-    ui_image_map: conrod::image::Map<(
-        ShaderResourceView<gfx_device_gl::Resources, [f32; 4]>,
-        (u32, u32),
-    )>,
 }
 
-impl<'a> Game<'a> {
+impl Game {
     pub fn new(
         ctx: &mut Context,
-        ui_renderer: conrod::backend::gfx::Renderer<'a, gfx_device_gl::Resources>,
     ) -> GameResult<Self> {
         let mut assets = Assets::new();
 
@@ -172,13 +151,6 @@ impl<'a> Game<'a> {
 
         create_ball(&mut world, &Point2::new(2, 4));
 
-        let mut ui = conrod::UiBuilder::new([1280.0, 800.0]).build();
-        let widget_ids = WidgetIds::new(ui.widget_id_generator());
-        let ui_image_map = conrod::image::Map::new();
-
-        const FONT_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/resources/DejaVuSans.ttf");
-        ui.fonts.insert_from_file(FONT_PATH).unwrap();
-
         Ok(Self {
             world,
             camera_system: CameraSystem,
@@ -190,23 +162,16 @@ impl<'a> Game<'a> {
             player_movement_system: PlayerMovementSystem,
             ball_dribble_system: BallDribbleSystem,
             ball_movement_system: BallMovementSystem,
-
-            ui_renderer,
-            ui,
-            widget_ids,
-            ui_image_map,
         })
     }
 }
 
-impl<'a> event::EventHandler for Game<'a> {
+impl event::EventHandler for Game {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
         let dt = timer::duration_to_f64(timer::get_delta(ctx));
         self.world.write_resource::<DeltaTime>().dt = dt as f32;
 
         self.camera_system.run_now(&self.world.res);
-
-        let ui = &mut self.ui.set_widgets();
 
         let state = self.world.read_resource::<Turn>().state.clone();
         match state {
@@ -215,7 +180,7 @@ impl<'a> event::EventHandler for Game<'a> {
                 self.player_select_system.run_now(&self.world.res);
             }
             TurnState::ActionMenu { .. } => {
-                let mut action_menu_system = ActionMenuSystem::new(ui, &self.widget_ids);
+                let mut action_menu_system = ActionMenuSystem;
                 action_menu_system.run_now(&self.world.res);
             }
             TurnState::SelectRun { .. } => {
@@ -237,21 +202,6 @@ impl<'a> event::EventHandler for Game<'a> {
             }
         }
 
-        // Display frames per second in top left
-        let fps = timer::get_fps(ctx);
-        conrod::widget::Text::new(&format!("{:.0} FPS", fps))
-            .top_left_with_margin_on(ui.window, 8.0)
-            .color(conrod::color::WHITE)
-            .font_size(12)
-            .set(self.widget_ids.fps, ui);
-
-        // Display game state in bottom left
-        conrod::widget::Text::new(&format!("{:?}", state))
-            .bottom_left_with_margin_on(ui.window, 8.0)
-            .color(conrod::color::WHITE)
-            .font_size(12)
-            .set(self.widget_ids.turn_state, ui);
-
         // Reset input states which must be pressed each time rather than held
         let mut input = self.world.write_resource::<Input>();
         input.select = false;
@@ -268,14 +218,7 @@ impl<'a> event::EventHandler for Game<'a> {
             rs.run_now(&self.world.res);
         }
 
-        {
-            let (factory, _device, encoder, _dtv, _rtv) = graphics::get_gfx_objects(ctx);
 
-            let primitives = self.ui.draw();
-            self.ui_renderer
-                .fill(encoder, (1280.0, 800.0), primitives, &self.ui_image_map);
-            self.ui_renderer.draw(factory, encoder, &self.ui_image_map);
-        }
 
         graphics::present(ctx);
         Ok(())
@@ -366,50 +309,6 @@ impl<'a> event::EventHandler for Game<'a> {
                 input.d = false;
             }
             _ => {}
-        }
-    }
-
-    fn mouse_motion_event(
-        &mut self,
-        ctx: &mut Context,
-        state: event::MouseState,
-        x: i32,
-        y: i32,
-        xrel: i32,
-        yrel: i32,
-    ) {
-        let input = ggez2conrod::convert_mouse_motion_event(ctx, state, x, y, xrel, yrel);
-
-        if let Some(input) = input {
-            self.ui.handle_event(input);
-        }
-    }
-
-    fn mouse_button_down_event(
-        &mut self,
-        ctx: &mut Context,
-        button: event::MouseButton,
-        x: i32,
-        y: i32,
-    ) {
-        let input = ggez2conrod::convert_mouse_button_down_event(ctx, button, x, y);
-
-        if let Some(input) = input {
-            self.ui.handle_event(input);
-        }
-    }
-
-    fn mouse_button_up_event(
-        &mut self,
-        ctx: &mut Context,
-        button: event::MouseButton,
-        x: i32,
-        y: i32,
-    ) {
-        let input = ggez2conrod::convert_mouse_button_up_event(ctx, button, x, y);
-
-        if let Some(input) = input {
-            self.ui.handle_event(input);
         }
     }
 }
