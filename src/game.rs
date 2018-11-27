@@ -5,13 +5,16 @@ use nalgebra::Point2;
 use specs::{RunNow, World};
 use tiled;
 
-use components::{Ball, BallState, CanMove, Cursor, CursorState, Player, PlayerState, PlayerTeam,
-                 Size, Sprite, SubTilePosition, TilePosition};
+use components::{
+    Ball, BallState, CanMove, Cursor, CursorState, Player, PlayerState, PlayerTeam, Size, Sprite,
+    SubTilePosition, TilePosition,
+};
 use render::RenderSystem;
 use resources::{Assets, Camera, DeltaTime, Input, Map, Turn, TurnState};
-use systems::{ActionMenuSystem, BallDribbleSystem, BallMovementSystem, CameraSystem,
-              CursorMovementSystem, PassSelectSystem, PathSelectSystem, PlayerMovementSystem,
-              PlayerSelectSystem, RunSelectSystem};
+use systems::{
+    ActionMenuSystem, BallDribbleSystem, BallMovementSystem, CameraSystem, CursorMovementSystem,
+    PassSelectSystem, PathSelectSystem, PlayerMovementSystem, PlayerSelectSystem, RunSelectSystem,
+};
 
 fn create_cursor(world: &mut World, pos: &Point2<u32>) {
     world
@@ -87,9 +90,7 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn new(
-        ctx: &mut Context,
-    ) -> GameResult<Self> {
+    pub fn new(ctx: &mut Context) -> GameResult<Self> {
         let mut assets = Assets::new();
 
         let mut cursor_image = graphics::Image::new(ctx, "/cursor.png").unwrap();
@@ -97,13 +98,19 @@ impl Game {
         assets.images.insert("cursor".to_string(), cursor_image);
         let mut player_red_image = graphics::Image::new(ctx, "/player-red.png").unwrap();
         player_red_image.set_filter(graphics::FilterMode::Nearest);
-        assets.images.insert("player-red".to_string(), player_red_image);
+        assets
+            .images
+            .insert("player-red".to_string(), player_red_image);
         let mut player_blue_image = graphics::Image::new(ctx, "/player-blue.png").unwrap();
         player_blue_image.set_filter(graphics::FilterMode::Nearest);
-        assets.images.insert("player-blue".to_string(), player_blue_image);
+        assets
+            .images
+            .insert("player-blue".to_string(), player_blue_image);
         let mut highlight_image = graphics::Image::new(ctx, "/highlight.png").unwrap();
         highlight_image.set_filter(graphics::FilterMode::Nearest);
-        assets.images.insert("highlight".to_string(), highlight_image);
+        assets
+            .images
+            .insert("highlight".to_string(), highlight_image);
         let mut path_image = graphics::Image::new(ctx, "/path.png").unwrap();
         path_image.set_filter(graphics::FilterMode::Nearest);
         assets.images.insert("path".to_string(), path_image);
@@ -221,11 +228,7 @@ impl event::EventHandler for Game {
         // Display frames per second in top left
         let mut fps_text = graphics::Text::new(format!("{:.0} FPS", timer::fps(ctx)));
         fps_text.set_font(graphics::Font::default(), graphics::Scale::uniform(24.0));
-        graphics::draw(
-            ctx,
-            &fps_text,
-            (Point2::new(8.0, 8.0), graphics::WHITE),
-        )?;
+        graphics::draw(ctx, &fps_text, (Point2::new(8.0, 8.0), graphics::WHITE))?;
 
         // Display the game state in bottom left
         let state = self.world.read_resource::<Turn>().state.clone();

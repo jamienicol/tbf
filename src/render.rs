@@ -45,23 +45,25 @@ fn get_path_directions(
 
 fn get_path_draw_params(from: &Direction, to: &Option<Direction>) -> (u32, u32) {
     match (from, to) {
-        (Direction::Left, Some(Direction::Right)) |
-        (Direction::Right, Some(Direction::Left)) => (0, 0),
-        (Direction::Up, Some(Direction::Down)) |
-        (Direction::Down, Some(Direction::Up)) => (64, 0),
+        (Direction::Left, Some(Direction::Right)) | (Direction::Right, Some(Direction::Left)) => {
+            (0, 0)
+        }
+        (Direction::Up, Some(Direction::Down)) | (Direction::Down, Some(Direction::Up)) => (64, 0),
         (Direction::Left, None) => (128, 0),
         (Direction::Up, None) => (192, 0),
         (Direction::Right, None) => (128, 64),
         (Direction::Down, None) => (192, 64),
-        (Direction::Left, Some(Direction::Up)) |
-        (Direction::Up, Some(Direction::Left)) => (0, 64),
-        (Direction::Up, Some(Direction::Right)) |
-        (Direction::Right, Some(Direction::Up)) => (64, 64),
-        (Direction::Left, Some(Direction::Down)) |
-        (Direction::Down, Some(Direction::Left)) => (0, 128),
-        (Direction::Down, Some(Direction::Right)) |
-        (Direction::Right, Some(Direction::Down)) => (64, 128),
-        _ => unreachable!()
+        (Direction::Left, Some(Direction::Up)) | (Direction::Up, Some(Direction::Left)) => (0, 64),
+        (Direction::Up, Some(Direction::Right)) | (Direction::Right, Some(Direction::Up)) => {
+            (64, 64)
+        }
+        (Direction::Left, Some(Direction::Down)) | (Direction::Down, Some(Direction::Left)) => {
+            (0, 128)
+        }
+        (Direction::Down, Some(Direction::Right)) | (Direction::Right, Some(Direction::Down)) => {
+            (64, 128)
+        }
+        _ => unreachable!(),
     }
 }
 
@@ -141,11 +143,7 @@ impl<'a, 'b> System<'b> for RenderSystem<'a> {
                 highlight_batch.add(param);
             }
         }
-        graphics::draw(
-            self.ctx,
-            &highlight_batch,
-            graphics::DrawParam::default(),
-        ).unwrap();
+        graphics::draw(self.ctx, &highlight_batch, graphics::DrawParam::default()).unwrap();
 
         // render paths
         let path_image = &assets.images["path"];

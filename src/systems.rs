@@ -3,8 +3,10 @@ use std::collections::HashMap;
 use nalgebra::{Matrix4, Point2, Vector2, Vector3};
 use specs::{Entities, Fetch, FetchMut, Join, ReadStorage, System, WriteStorage};
 
-use components::{Ball, BallState, CanMove, Cursor, CursorState, Direction, Player, PlayerState,
-                 SubTilePosition, TilePosition};
+use components::{
+    Ball, BallState, CanMove, Cursor, CursorState, Direction, Player, PlayerState, SubTilePosition,
+    TilePosition,
+};
 use resources::{Camera, DeltaTime, Input, Map, Turn, TurnState};
 
 const CURSOR_SPEED: f32 = 320.0;
@@ -79,20 +81,16 @@ impl<'a> System<'a> for CameraSystem {
         let (mut camera, dt, input) = data;
 
         if input.a {
-            camera.mat *=
-                Matrix4::new_translation(&Vector3::new(CAMERA_SPEED * dt.dt, 0.0, 0.0));
+            camera.mat *= Matrix4::new_translation(&Vector3::new(CAMERA_SPEED * dt.dt, 0.0, 0.0));
         }
         if input.w {
-            camera.mat *=
-                Matrix4::new_translation(&Vector3::new(0.0, CAMERA_SPEED * dt.dt, 0.0));
+            camera.mat *= Matrix4::new_translation(&Vector3::new(0.0, CAMERA_SPEED * dt.dt, 0.0));
         }
         if input.d {
-            camera.mat *=
-                Matrix4::new_translation(&Vector3::new(-CAMERA_SPEED * dt.dt, 0.0, 0.0));
+            camera.mat *= Matrix4::new_translation(&Vector3::new(-CAMERA_SPEED * dt.dt, 0.0, 0.0));
         }
         if input.s {
-            camera.mat *=
-                Matrix4::new_translation(&Vector3::new(0.0, -CAMERA_SPEED * dt.dt, 0.0));
+            camera.mat *= Matrix4::new_translation(&Vector3::new(0.0, -CAMERA_SPEED * dt.dt, 0.0));
         }
     }
 }
@@ -317,7 +315,8 @@ impl<'a> System<'a> for ActionMenuSystem {
         let (entities, mut turn, input, map, players, balls, tile_positions, mut can_moves) = data;
 
         if let TurnState::ActionMenu { player_id } = turn.state {
-            if input.select { // FIXME: run button clicked
+            if input.select {
+                // FIXME: run button clicked
                 let player_pos = tile_positions.get(player_id).unwrap().pos;
                 let dests = calculate_run_targets(
                     &player_pos,
@@ -343,10 +342,10 @@ impl<'a> System<'a> for ActionMenuSystem {
                 } = ball.state
                 {
                     if player_id == possessed_by {
-                        if false { // FIXME: pass button clicked
+                        if false {
+                            // FIXME: pass button clicked
                             let ball_pos = tile_positions.get(ball_id).unwrap().pos;
-                            let dests =
-                                calculate_pass_targets(&ball_pos, &map, BALL_PASS_DISTANCE);
+                            let dests = calculate_pass_targets(&ball_pos, &map, BALL_PASS_DISTANCE);
                             let can_move = CanMove {
                                 start: ball_pos,
                                 distance: BALL_PASS_DISTANCE,
@@ -363,7 +362,8 @@ impl<'a> System<'a> for ActionMenuSystem {
                 }
             }
 
-            if input.cancel { // FIXME: cancel button clicked
+            if input.cancel {
+                // FIXME: cancel button clicked
                 turn.state = TurnState::SelectPlayer;
             }
         }
@@ -444,7 +444,10 @@ impl<'a> System<'a> for PathSelectSystem {
                     } else if get_adjacent_tiles(
                         can_move.path.last().unwrap_or(&can_move.start),
                         &Vector2::new(map.map.width, map.map.height),
-                    ).contains(&cursor_pos.pos) && can_move.path.len() < can_move.distance as usize {
+                    )
+                    .contains(&cursor_pos.pos)
+                        && can_move.path.len() < can_move.distance as usize
+                    {
                         // We've only moved by 1 tile and the path isn't too long
                         can_move.path.push(cursor_pos.pos);
                     }
