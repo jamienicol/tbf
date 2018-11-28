@@ -17,7 +17,7 @@ const TILE_SIZE: u32 = 64;
 const PLAYER_MOVE_DISTANCE: u32 = 4;
 const BALL_PASS_DISTANCE: u32 = 8;
 
-fn tile_to_subtile(tile_pos: &Point2<u32>) -> Point2<f32> {
+fn tile_to_subtile(tile_pos: Point2<u32>) -> Point2<f32> {
     Point2::new(
         (tile_pos.x * TILE_SIZE) as f32,
         (tile_pos.y * TILE_SIZE) as f32,
@@ -75,6 +75,7 @@ fn required_time(displacement: f32, velocity: f32) -> f32 {
 pub struct CameraSystem;
 
 impl<'a> System<'a> for CameraSystem {
+    #![cfg_attr(feature = "cargo-clippy", allow(clippy::type_complexity))]
     type SystemData = (FetchMut<'a, Camera>, Fetch<'a, DeltaTime>, Fetch<'a, Input>);
 
     fn run(&mut self, data: Self::SystemData) {
@@ -98,6 +99,7 @@ impl<'a> System<'a> for CameraSystem {
 pub struct CursorMovementSystem;
 
 impl<'a> System<'a> for CursorMovementSystem {
+    #![cfg_attr(feature = "cargo-clippy", allow(clippy::type_complexity))]
     type SystemData = (
         Fetch<'a, DeltaTime>,
         Fetch<'a, Input>,
@@ -117,7 +119,7 @@ impl<'a> System<'a> for CursorMovementSystem {
             while remaining_dt > 0.0 {
                 if cursor.state == CursorState::Still {
                     // If we're still then the subtile position must be equal to the tile position
-                    assert!(tile_to_subtile(&tile_position.pos) == sub_tile_position.pos);
+                    assert!(tile_to_subtile(tile_position.pos) == sub_tile_position.pos);
 
                     if let Some(direction) = get_input(&input) {
                         let velocity =
@@ -143,7 +145,7 @@ impl<'a> System<'a> for CursorMovementSystem {
                 }
 
                 if let CursorState::Moving { velocity, target } = cursor.state {
-                    let disp = tile_to_subtile(&target) - sub_tile_position.pos;
+                    let disp = tile_to_subtile(target) - sub_tile_position.pos;
                     let required_dt_x = required_time(disp.x, velocity.x);
                     let required_dt_y = required_time(disp.y, velocity.y);
 
@@ -154,7 +156,7 @@ impl<'a> System<'a> for CursorMovementSystem {
                         Vector2::new(velocity.x * remaining_dt_x, velocity.y * remaining_dt_y);
                     remaining_dt -= remaining_dt_x.max(remaining_dt_y);
 
-                    if sub_tile_position.pos == tile_to_subtile(&target) {
+                    if sub_tile_position.pos == tile_to_subtile(target) {
                         tile_position.pos = target;
                         cursor.state = CursorState::Still;
                     }
@@ -167,6 +169,7 @@ impl<'a> System<'a> for CursorMovementSystem {
 pub struct PlayerSelectSystem;
 
 impl<'a> System<'a> for PlayerSelectSystem {
+    #![cfg_attr(feature = "cargo-clippy", allow(clippy::type_complexity))]
     type SystemData = (
         Entities<'a>,
         Fetch<'a, Input>,
@@ -192,7 +195,7 @@ impl<'a> System<'a> for PlayerSelectSystem {
     }
 }
 
-fn get_adjacent_tiles(tile_pos: &Point2<u32>, map_size: &Vector2<u32>) -> Vec<Point2<u32>> {
+fn get_adjacent_tiles(tile_pos: Point2<u32>, map_size: Vector2<u32>) -> Vec<Point2<u32>> {
     let mut tiles = Vec::new();
     if tile_pos.x >= 1 {
         tiles.push(Point2::new(tile_pos.x - 1, tile_pos.y));
@@ -211,7 +214,7 @@ fn get_adjacent_tiles(tile_pos: &Point2<u32>, map_size: &Vector2<u32>) -> Vec<Po
 }
 
 fn calculate_run_targets<'a>(
-    start_pos: &Point2<u32>,
+    start_pos: Point2<u32>,
     map: &Map,
     max_distance: u32,
     players: &ReadStorage<'a, Player>,
@@ -219,11 +222,11 @@ fn calculate_run_targets<'a>(
 ) -> Vec<Point2<u32>> {
     // targets that we can run to
     let mut targets: Vec<Point2<u32>> = Vec::new();
-    targets.push(start_pos.clone());
+    targets.push(start_pos);
 
     // tiles that still need to be searched. start with those adjacent to the start.
     let mut to_search: Vec<Point2<u32>> =
-        get_adjacent_tiles(start_pos, &Vector2::new(map.map.width, map.map.height));
+        get_adjacent_tiles(start_pos, Vector2::new(map.map.width, map.map.height));
 
     // tiles that are just about to be or have already been searched,
     // and their cost for the path to the tile (but not including itself).
@@ -231,7 +234,7 @@ fn calculate_run_targets<'a>(
     let mut searched: HashMap<Point2<u32>, u32> = HashMap::new();
 
     // set the cost for the first tiles to 0
-    searched.insert(*start_pos, 0);
+    searched.insert(start_pos, 0);
     for tile in &to_search {
         searched.insert(*tile, 0);
     }
@@ -249,7 +252,7 @@ fn calculate_run_targets<'a>(
         let occupied = (players, tile_positions)
             .join()
             .any(|(_, pos)| pos.pos == next);
-        if occupied && next != *start_pos {
+        if occupied && next != start_pos {
             continue;
         }
 
@@ -259,7 +262,7 @@ fn calculate_run_targets<'a>(
         }
 
         // queue adjacent tiles to be searched
-        for tile in get_adjacent_tiles(&next, &Vector2::new(map.map.width, map.map.height)) {
+        for tile in get_adjacent_tiles(next, Vector2::new(map.map.width, map.map.height)) {
             let should_search = !searched.contains_key(&tile)
                 || (searched.contains_key(&tile) && new_distance < searched[&tile]);
             if should_search {
@@ -273,7 +276,7 @@ fn calculate_run_targets<'a>(
 }
 
 fn calculate_pass_targets(
-    start_pos: &Point2<u32>,
+    start_pos: Point2<u32>,
     map: &Map,
     max_distance: u32,
 ) -> Vec<Point2<u32>> {
@@ -300,6 +303,7 @@ fn calculate_pass_targets(
 pub struct ActionMenuSystem;
 
 impl<'a> System<'a> for ActionMenuSystem {
+    #![cfg_attr(feature = "cargo-clippy", allow(clippy::type_complexity))]
     type SystemData = (
         Entities<'a>,
         FetchMut<'a, Turn>,
@@ -319,7 +323,7 @@ impl<'a> System<'a> for ActionMenuSystem {
                 // FIXME: run button clicked
                 let player_pos = tile_positions.get(player_id).unwrap().pos;
                 let dests = calculate_run_targets(
-                    &player_pos,
+                    player_pos,
                     &map,
                     PLAYER_MOVE_DISTANCE,
                     &players,
@@ -345,7 +349,7 @@ impl<'a> System<'a> for ActionMenuSystem {
                         if false {
                             // FIXME: pass button clicked
                             let ball_pos = tile_positions.get(ball_id).unwrap().pos;
-                            let dests = calculate_pass_targets(&ball_pos, &map, BALL_PASS_DISTANCE);
+                            let dests = calculate_pass_targets(ball_pos, &map, BALL_PASS_DISTANCE);
                             let can_move = CanMove {
                                 start: ball_pos,
                                 distance: BALL_PASS_DISTANCE,
@@ -373,6 +377,7 @@ impl<'a> System<'a> for ActionMenuSystem {
 pub struct RunSelectSystem;
 
 impl<'a> System<'a> for RunSelectSystem {
+    #![cfg_attr(feature = "cargo-clippy", allow(clippy::type_complexity))]
     type SystemData = (
         Fetch<'a, Input>,
         FetchMut<'a, Turn>,
@@ -415,6 +420,7 @@ impl<'a> System<'a> for RunSelectSystem {
 pub struct PathSelectSystem;
 
 impl<'a> System<'a> for PathSelectSystem {
+    #![cfg_attr(feature = "cargo-clippy", allow(clippy::type_complexity))]
     type SystemData = (
         Fetch<'a, Map>,
         ReadStorage<'a, Cursor>,
@@ -442,8 +448,8 @@ impl<'a> System<'a> for PathSelectSystem {
                         // If we cross our existing path then shrink back
                         can_move.path.truncate(i + 1);
                     } else if get_adjacent_tiles(
-                        can_move.path.last().unwrap_or(&can_move.start),
-                        &Vector2::new(map.map.width, map.map.height),
+                        *can_move.path.last().unwrap_or(&can_move.start),
+                        Vector2::new(map.map.width, map.map.height),
                     )
                     .contains(&cursor_pos.pos)
                         && can_move.path.len() < can_move.distance as usize
@@ -460,6 +466,7 @@ impl<'a> System<'a> for PathSelectSystem {
 pub struct PlayerMovementSystem;
 
 impl<'a> System<'a> for PlayerMovementSystem {
+    #![cfg_attr(feature = "cargo-clippy", allow(clippy::type_complexity))]
     type SystemData = (
         Fetch<'a, DeltaTime>,
         FetchMut<'a, Turn>,
@@ -483,7 +490,7 @@ impl<'a> System<'a> for PlayerMovementSystem {
                         None => break,
                         Some(target) => *target,
                     };
-                    let disp = tile_to_subtile(&target) - sub_tile_position.pos;
+                    let disp = tile_to_subtile(target) - sub_tile_position.pos;
 
                     if disp != Vector2::new(0.0, 0.0) {
                         let velocity = disp.normalize() * PLAYER_SPEED;
@@ -499,7 +506,7 @@ impl<'a> System<'a> for PlayerMovementSystem {
                         remaining_dt -= remaining_dt_x.max(remaining_dt_y);
                     }
 
-                    if sub_tile_position.pos == tile_to_subtile(&target) {
+                    if sub_tile_position.pos == tile_to_subtile(target) {
                         tile_position.pos = target;
                         path.remove(0);
                     }
@@ -521,6 +528,7 @@ impl<'a> System<'a> for PlayerMovementSystem {
 pub struct BallDribbleSystem;
 
 impl<'a> System<'a> for BallDribbleSystem {
+    #![cfg_attr(feature = "cargo-clippy", allow(clippy::type_complexity))]
     type SystemData = (
         Entities<'a>,
         WriteStorage<'a, Ball>,
@@ -560,6 +568,7 @@ impl<'a> System<'a> for BallDribbleSystem {
 pub struct PassSelectSystem;
 
 impl<'a> System<'a> for PassSelectSystem {
+    #![cfg_attr(feature = "cargo-clippy", allow(clippy::type_complexity))]
     type SystemData = (
         Fetch<'a, Input>,
         FetchMut<'a, Turn>,
@@ -604,6 +613,7 @@ impl<'a> System<'a> for PassSelectSystem {
 pub struct BallMovementSystem;
 
 impl<'a> System<'a> for BallMovementSystem {
+    #![cfg_attr(feature = "cargo-clippy", allow(clippy::type_complexity))]
     type SystemData = (
         Fetch<'a, DeltaTime>,
         FetchMut<'a, Turn>,
@@ -627,7 +637,7 @@ impl<'a> System<'a> for BallMovementSystem {
                         None => break,
                         Some(target) => *target,
                     };
-                    let disp = tile_to_subtile(&target) - sub_tile_position.pos;
+                    let disp = tile_to_subtile(target) - sub_tile_position.pos;
 
                     if disp != Vector2::new(0.0, 0.0) {
                         let velocity = disp.normalize() * PASS_SPEED;
@@ -643,7 +653,7 @@ impl<'a> System<'a> for BallMovementSystem {
                         remaining_dt -= remaining_dt_x.max(remaining_dt_y);
                     }
 
-                    if sub_tile_position.pos == tile_to_subtile(&target) {
+                    if sub_tile_position.pos == tile_to_subtile(target) {
                         tile_position.pos = target;
                         path.remove(0);
                     }

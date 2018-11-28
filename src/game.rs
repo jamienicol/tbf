@@ -16,13 +16,13 @@ use systems::{
     PassSelectSystem, PathSelectSystem, PlayerMovementSystem, PlayerSelectSystem, RunSelectSystem,
 };
 
-fn create_cursor(world: &mut World, pos: &Point2<u32>) {
+fn create_cursor(world: &mut World, pos: Point2<u32>) {
     world
         .create_entity()
         .with(Cursor {
             state: CursorState::Still,
         })
-        .with(TilePosition { pos: *pos })
+        .with(TilePosition { pos })
         .with(SubTilePosition {
             pos: Point2::new((pos.x * 64) as f32, (pos.y * 64) as f32),
         })
@@ -34,14 +34,14 @@ fn create_cursor(world: &mut World, pos: &Point2<u32>) {
         .build();
 }
 
-fn create_player(world: &mut World, pos: &Point2<u32>, team: PlayerTeam) {
+fn create_player(world: &mut World, pos: Point2<u32>, team: PlayerTeam) {
     world
         .create_entity()
         .with(Player {
             state: PlayerState::Still,
             team,
         })
-        .with(TilePosition { pos: *pos })
+        .with(TilePosition { pos })
         .with(SubTilePosition {
             pos: Point2::new((pos.x * 64) as f32, (pos.y * 64) as f32),
         })
@@ -58,13 +58,13 @@ fn create_player(world: &mut World, pos: &Point2<u32>, team: PlayerTeam) {
         .build();
 }
 
-fn create_ball(world: &mut World, pos: &Point2<u32>) {
+fn create_ball(world: &mut World, pos: Point2<u32>) {
     world
         .create_entity()
         .with(Ball {
             state: BallState::Free,
         })
-        .with(TilePosition { pos: *pos })
+        .with(TilePosition { pos })
         .with(SubTilePosition {
             pos: Point2::new((pos.x * 64) as f32, (pos.y * 64) as f32),
         })
@@ -148,15 +148,15 @@ impl Game {
             state: TurnState::SelectPlayer,
         });
 
-        create_cursor(&mut world, &Point2::new(0, 0));
-        create_player(&mut world, &Point2::new(2, 2), PlayerTeam::Red);
-        create_player(&mut world, &Point2::new(4, 4), PlayerTeam::Red);
-        create_player(&mut world, &Point2::new(2, 6), PlayerTeam::Red);
-        create_player(&mut world, &Point2::new(10, 2), PlayerTeam::Blue);
-        create_player(&mut world, &Point2::new(12, 6), PlayerTeam::Blue);
-        create_player(&mut world, &Point2::new(11, 8), PlayerTeam::Blue);
+        create_cursor(&mut world, Point2::new(0, 0));
+        create_player(&mut world, Point2::new(2, 2), PlayerTeam::Red);
+        create_player(&mut world, Point2::new(4, 4), PlayerTeam::Red);
+        create_player(&mut world, Point2::new(2, 6), PlayerTeam::Red);
+        create_player(&mut world, Point2::new(10, 2), PlayerTeam::Blue);
+        create_player(&mut world, Point2::new(12, 6), PlayerTeam::Blue);
+        create_player(&mut world, Point2::new(11, 8), PlayerTeam::Blue);
 
-        create_ball(&mut world, &Point2::new(2, 4));
+        create_ball(&mut world, Point2::new(2, 4));
 
         Ok(Self {
             world,

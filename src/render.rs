@@ -6,7 +6,7 @@ use specs::{Fetch, Join, ReadStorage, System};
 use components::{CanMove, Direction, Size, Sprite, SubTilePosition};
 use resources::{Assets, Camera, Map};
 
-fn get_direction(from: &Point2<u32>, to: &Point2<u32>) -> Option<Direction> {
+fn get_direction(from: Point2<u32>, to: Point2<u32>) -> Option<Direction> {
     if from.x < to.x && from.y == to.y {
         Some(Direction::Right)
     } else if from.x > to.x && from.y == to.y {
@@ -21,21 +21,21 @@ fn get_direction(from: &Point2<u32>, to: &Point2<u32>) -> Option<Direction> {
 }
 
 fn get_path_directions(
-    start: &Point2<u32>,
+    start: Point2<u32>,
     path: &[Point2<u32>],
 ) -> Vec<(Direction, Option<Direction>)> {
     let mut directions = Vec::with_capacity(path.len());
 
     for (i, pos) in path.iter().enumerate() {
         let from = if i == 0 {
-            get_direction(pos, start).unwrap()
+            get_direction(*pos, start).unwrap()
         } else {
-            get_direction(pos, &path[i - 1]).unwrap()
+            get_direction(*pos, path[i - 1]).unwrap()
         };
         let to = if i == path.len() - 1 {
             None
         } else {
-            get_direction(pos, &path[i + 1])
+            get_direction(*pos, path[i + 1])
         };
         directions.push((from, to));
     }
@@ -78,6 +78,7 @@ impl<'a> RenderSystem<'a> {
 }
 
 impl<'a, 'b> System<'b> for RenderSystem<'a> {
+    #![cfg_attr(feature = "cargo-clippy", allow(clippy::type_complexity))]
     type SystemData = (
         Fetch<'b, Assets>,
         Fetch<'b, Camera>,
@@ -149,14 +150,14 @@ impl<'a, 'b> System<'b> for RenderSystem<'a> {
         let path_image = &assets.images["path"];
         let mut path_batch = SpriteBatch::new(path_image.clone());
         for (can_move,) in (&can_moves,).join() {
-            let directions = get_path_directions(&can_move.start, &can_move.path);
+            let directions = get_path_directions(can_move.start, &can_move.path);
             for (path, direction) in can_move.path.iter().zip(directions.iter()) {
                 let (src_x, src_y) = get_path_draw_params(&direction.0, &direction.1);
                 let src = graphics::Rect {
-                    x: src_x as f32 / path_image.width() as f32,
-                    y: src_y as f32 / path_image.height() as f32,
-                    w: 64.0 / path_image.width() as f32,
-                    h: 64.0 / path_image.height() as f32,
+                    x: src_x as f32 / f32::from(path_image.width()),
+                    y: src_y as f32 / f32::from(path_image.height()),
+                    w: 64.0 / f32::from(path_image.width()),
+                    h: 64.0 / f32::from(path_image.height()),
                 };
                 let dest = Point2::new(
                     (path.x * map.map.tile_width) as f32,
